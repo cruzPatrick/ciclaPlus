@@ -1,0 +1,85 @@
+// ==========================================================================
+// Cicla+ — tema Bootstrap
+//
+// A ideia aqui é não escrever CSS custom pra cor nenhuma: a paleta entra
+// nas variáveis do Bootstrap ANTES dele ser importado, então .btn-primary,
+// .bg-secondary, .text-ciclagrey etc. já nascem com a cor certa.
+// ==========================================================================
+
+@import "bootstrap/scss/functions";
+
+// Paleta Cicla+
+$pine-blue: #357266;
+$taupe-grey: #6f5e5c;
+$ash-grey: #aeb7b3;
+
+$primary: $pine-blue;
+$secondary: $taupe-grey;
+
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+
+// Terceira cor da paleta vira um "theme color" de verdade: o Bootstrap
+// gera .bg-ciclagrey, .text-ciclagrey, .btn-ciclagrey etc. sozinho.
+$theme-colors: map-merge(
+  $theme-colors,
+  (
+    "ciclagrey": $ash-grey,
+  )
+);
+
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/root";
+
+@import "bootstrap/scss/utilities";
+@import "bootstrap/scss/reboot";
+@import "bootstrap/scss/type";
+@import "bootstrap/scss/images";
+@import "bootstrap/scss/containers";
+@import "bootstrap/scss/grid";
+@import "bootstrap/scss/tables";
+@import "bootstrap/scss/forms";
+@import "bootstrap/scss/buttons";
+@import "bootstrap/scss/transitions";
+@import "bootstrap/scss/nav";
+@import "bootstrap/scss/navbar";
+@import "bootstrap/scss/card";
+@import "bootstrap/scss/close";
+@import "bootstrap/scss/helpers";
+
+@import "bootstrap/scss/utilities/api";
+
+// --------------------------------------------------------------------------
+// Único CSS "de verdade" do projeto: o card de login/cadastro, que reproduz
+// o layout do repositório base (projeto-login) — isso o Bootstrap sozinho
+// não cobre, porque é um formato bem específico (card centralizado com foto
+// no topo, inputs com ícone dentro do campo).
+// --------------------------------------------------------------------------
+.auth-card {
+  width: 280px;
+  min-height: 550px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+.auth-card__photo {
+  height: 200px;
+  background: $primary url("/images/ciclista-login.jpg") center center
+    no-repeat;
+  background-size: cover;
+}
+
+.auth-card .form-floating .material-icons {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  color: $primary;
+  z-index: 5;
+}
+
+.auth-card .form-floating input {
+  padding-left: 2.5rem;
+}
