@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [erro, setErro] = useState("");
 
   // Dados locais do componente — nada vem de backend aqui.
   const textoApresentacao =
@@ -9,10 +11,21 @@ export default function Login() {
     "participe de desafios e acompanhe sua evolução através dos rankings " +
     "da comunidade.";
 
+  // Usuário de teste fixo, só pra simular um login de verdade sem backend.
+  const usuarioTeste = { email: "teste@ciclaplus.com", senha: "123456" };
+
   function handleSubmit(evento) {
     evento.preventDefault();
-    // Sem backend ainda — só simula o login indo direto pra área interna.
-    navigate("/app/descoberta");
+    const dados = new FormData(evento.target);
+    const email = dados.get("email");
+    const senha = dados.get("senha");
+
+    if (email === usuarioTeste.email && senha === usuarioTeste.senha) {
+      setErro("");
+      navigate("/app/descoberta");
+    } else {
+      setErro("E-mail ou senha incorretos.");
+    }
   }
 
   return (
@@ -25,6 +38,16 @@ export default function Login() {
           <p className="small text-body-secondary text-center mb-3">
             {textoApresentacao}
           </p>
+          <p className="small text-center text-body-secondary mb-2">
+            Teste com: <strong>{usuarioTeste.email}</strong> / senha{" "}
+            <strong>{usuarioTeste.senha}</strong>
+          </p>
+
+          {erro && (
+            <div className="alert alert-danger py-2 small" role="alert">
+              {erro}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="form-floating position-relative mb-2">
@@ -33,6 +56,7 @@ export default function Login() {
                 type="email"
                 className="form-control"
                 id="iemail"
+                name="email"
                 placeholder="Seu e-mail"
                 autoComplete="email"
                 required
@@ -46,6 +70,7 @@ export default function Login() {
                 type="password"
                 className="form-control"
                 id="isenha"
+                name="senha"
                 placeholder="Sua senha"
                 autoComplete="current-password"
                 required
