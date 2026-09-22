@@ -20,7 +20,9 @@ export default function Cadastro() {
   }
 
   return (
-    <>
+    // Coluna com altura mínima da viewport: o Footer (mt-auto) fica no pé
+    // da tela mesmo quando o formulário não preenche a viewport.
+    <div className="d-flex flex-column min-vh-100">
       <Header titulo="Cadastrar novo ciclista" />
 
       <main className="container py-4" style={{ maxWidth: "480px" }}>
@@ -48,6 +50,6 @@ export default function Cadastro() {
       </main>
 
       <Footer />
-    </>
+    </div>
   );
 }

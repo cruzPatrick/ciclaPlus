@@ -83,3 +83,11 @@ $theme-colors: map-merge(
 .auth-card .form-floating input {
   padding-left: 2.5rem;
 }
+
+// O ícone ocupa a faixa esquerda do campo (left: 0.75rem + 24px). Sem esse
+// padding, o rótulo (E-mail/Senha) começa exatamente no mesmo ponto — na
+// mesma altura vertical — e o ícone fica por cima do texto. Com
+// padding-left igual ao do input, o rótulo começa depois do ícone.
+.auth-card .form-floating > label {
+  padding-left: 2.5rem;
+}

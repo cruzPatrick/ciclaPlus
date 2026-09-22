@@ -18,7 +18,9 @@ export default function Landing() {
   ];
 
   return (
-    <>
+    // Coluna com altura mínima da viewport: o footer (mt-auto) fica no pé
+    // da tela mesmo com conteúdo curto.
+    <div className="d-flex flex-column min-vh-100">
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
         <div className="container">
           <span className="navbar-brand">Cicla+</span>
@@ -61,9 +63,9 @@ export default function Landing() {
         </div>
       </main>
 
-      <footer className="bg-secondary text-white text-center py-3">
+      <footer className="bg-secondary text-white text-center py-3 mt-auto">
         <p className="m-0 small">&copy; 2026 Cicla+. Todos os direitos reservados.</p>
       </footer>
-    </>
+    </div>
   );
 }

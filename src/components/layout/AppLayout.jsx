@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import Footer from "./Footer.jsx";
 
 export default function AppLayout() {
   // Itens do menu como variável local do componente.
@@ -15,7 +16,10 @@ export default function AppLayout() {
   ];
 
   return (
-    <>
+    // Envolve tudo em uma coluna de altura mínima da viewport: o menu fica
+    // no topo, o conteúdo no meio e o footer é empurrado pro fundo (mt-auto)
+    // em vez de ficar colado logo abaixo do conteúdo, no meio da tela.
+    <div className="d-flex flex-column min-vh-100">
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
         <div className="container">
           <span className="navbar-brand">Cicla+</span>
@@ -50,9 +54,7 @@ export default function AppLayout() {
 
       <Outlet />
 
-      <footer className="bg-primary text-white text-center py-3 mt-4">
-        <p className="m-0 small">&copy; 2026 Cicla+. Todos os direitos reservados.</p>
-      </footer>
-    </>
+      <Footer />
+    </div>
   );
 }
