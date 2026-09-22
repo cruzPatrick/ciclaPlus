@@ -98,7 +98,55 @@ cima do ícone e o texto digitado começa na mesma linha do rótulo.
 
 ---
 
-### Próximos passos (pendências do front-end, em ordem de prioridade)
+## 2026-09-22 — Publicação no GitHub Pages
+
+### Objetivo
+
+Publicar o protótipo em **https://cruzpatrick.github.io/ciclaPlus/** e
+deploy automático a cada push em `main`.
+
+### O que foi feito
+
+| Arquivo | Mudança |
+|---|---|
+| `vite.config.js` | `base: '/ciclaPlus/'` **só no build** (no dev server continua `/`, pra não quebrar o `npm run dev`); plugin `spa-404-fallback` que copia `dist/index.html` → `dist/404.html` |
+| `src/main.jsx` | `basename={import.meta.env.BASE_URL}` no `BrowserRouter` — o app agora roda numa subpasta (`/ciclaPlus/`), sem isso todo `<Link to="/login">` iria pra `github.io/login` |
+| `.github/workflows/deploy-pages.yml` | workflow novo: `npm ci` → `npm run build` → `actions/deploy-pages` em todo push em `main` (também dá pra disparar manualmente em Actions) |
+
+**Por que o `404.html`:** o GitHub Pages responde 404 pra qualquer rota
+interna digitada direto na URL ou recarregada (ex.:
+`/ciclaPlus/app/ranking`). Servindo o `index.html` como `404.html`, a app
+carrega mesmo assim (status 404, mas com o HTML certo) e o react-router
+resolve a rota.
+
+**Registro Git:** dois commits em `main` —
+
+- `bc8ba64` — Corrige footer no meio da tela e ícones sobre o texto no login
+- `209a5d4` — Adiciona deploy automatico no GitHub Pages
+
+**Configuração do repositório:** GitHub Pages habilitado via API com
+`build_type: workflow` (Source = GitHub Actions). URL do site:
+`https://cruzpatrick.github.io/ciclaPlus/`.
+
+### Verificação feita nesta rodada
+
+- `npm run build` local: build ok, `dist/404.html` gerado, assets com
+  prefixo `/ciclaPlus/`.
+- Workflow "Deploy to GitHub Pages": **success**
+  ([run 35740158637](https://github.com/cruzPatrick/ciclaPlus/actions/runs/35740158637)).
+- `https://cruzpatrick.github.io/ciclaPlus/` → **200** com o HTML da app.
+- `https://cruzpatrick.github.io/ciclaPlus/app/ranking` → status **404**
+  esperado, mas devolvendo o `index.html` (fallback) — a rota carrega.
+
+### Observações
+
+- Sem `gh` CLI nesta máquina; habilitação do Pages e acompanhamento do
+  workflow foram via API do GitHub com a credencial já salva no git.
+- PRÓXIMO push em `main` já dispara o deploy sozinho.
+
+---
+
+## Próximos passos (pendências do front-end — valem pra qualquer rodada)
 
 - Refinar as telas internas hoje rascunho: `Descoberta` (match), `Chat`
   (abrir conversa e enviar mensagens), `Tempos`, `Confronto`, `Consultoria`,
