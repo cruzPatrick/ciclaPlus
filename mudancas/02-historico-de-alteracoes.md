@@ -290,6 +290,117 @@ inalterado — a lista continua começando abaixo dos dois.
 
 ---
 
+## 2026-09-23 — Deploy automático removido do GitHub Pages (agora só manual)
+
+### Contexto da rodada
+
+A pedido do responsável: parar de publicar automaticamente a cada push em
+`main`. O site continua existindo em
+**https://cruzpatrick.github.io/ciclaPlus/**, mas só atualiza quando o
+deploy for disparado manualmente.
+
+### Mudança — gatilho `push` removido do workflow
+
+**Antes:** `.github/workflows/deploy-pages.yml` disparava em
+`push` para `main` **e** manualmente via `workflow_dispatch` (a entrada de
+2026-09-22 "Publicação no GitHub Pages" descreve esse comportamento — ela
+está **desatualizada** em relação a este ponto).
+
+**Depois:** o workflow tem **apenas** `workflow_dispatch` — build do Vite +
+publicação no Pages acontecem só quando alguém aciona
+**Actions → Deploy to GitHub Pages → Run workflow**. Push em `main`
+(publicação incluída) **não** dispara mais nada.
+
+**Arquivo alterado:**
+
+| Arquivo | Mudança |
+|---|---|
+| `.github/workflows/deploy-pages.yml` | bloco `on.push.branches: [main]` removido; sobra só `on.workflow_dispatch`; comentário do topo atualizado |
+
+**Registro Git:**
+
+- `c2648c7` — Remove deploy automatico do GitHub Pages
+
+**Como verificar:** `git push` em `main` e conferir em Actions que nenhum
+run "Deploy to GitHub Pages" é criado; para publicar, disparar manualmente
+pela UI do Actions.
+
+---
+
+## 2026-09-23 — Página Perfil: editar conta, mudar perfil e logoff
+
+### Contexto da rodada
+
+Criar as opções de conta da área interna: **logoff, mudar perfil e editar
+conta** — sem CRUD nesta rodada (só a estrutura; nenhuma das opções grava
+dados). Decisões combinadas:
+
+- As 3 opções moram numa **página própria** (`/app/perfil`), não direto no
+  menu.
+- A página usa a **mesma foto do card de login**
+  (`public/images/ciclista-login.jpg`) como banner — o "logo" escolhido foi
+  a foto do ciclista (não o favicon nem o texto).
+- O item de menu se chama **"Perfil"**, é **sempre o último**: parte de
+  baixo do hambúrguer (desktop) e última aba escrita "Perfil" (mobile).
+
+### Mudança — nova rota/página Perfil + item de menu
+
+**`src/pages/app/Perfil.jsx` (novo):**
+
+- Card arredondado (`.perfil-card`) espelhando o `auth-card` do login, com
+  banner de foto no topo (`.perfil-banner`, 180px, mesma imagem do login).
+- Exibe o e-mail da conta de teste fixa (`teste@ciclaplus.com`) — dado local,
+  sem backend.
+- 3 botões:
+  - **Editar conta** (`btn-outline-primary`, ícone `edit`) — **sem ação**
+    (CRUD futuro).
+  - **Mudar perfil** (`btn-outline-primary`, ícone `swap_horiz`) — **sem
+    ação** (CRUD futuro).
+  - **Sair** (`btn-outline-danger`, ícone `logout`) — único funcional:
+    `navigate("/login")`.
+
+**Menu (`src/components/layout/AppLayout.jsx`):**
+
+- `{ to: "perfil", texto: "Perfil" }` adicionado **por último** no array
+  `ITENS` — o mesmo array alimenta `DesktopMenu` (hambúrguer) e
+  `MobileTabs` (abas), então por padrão ele já cai na posição pedida nos
+  dois: último link do painel lateral e última aba mobile. Quem mexer no
+  menu no futuro deve **mantê-lo no fim** da lista.
+
+**Rotas (`src/App.jsx`):**
+
+- `<Route path="perfil" element={<Perfil />} />` dentro do layout `/app`.
+
+**Arquivos alterados:**
+
+| Arquivo | Mudança |
+|---|---|
+| `src/pages/app/Perfil.jsx` | **novo** — página de perfil com banner (foto do login) e botões Editar conta / Mudar perfil / Sair |
+| `src/App.jsx` | import de `Perfil`; rota `perfil` dentro de `/app` |
+| `src/components/layout/AppLayout.jsx` | item `{ to: "perfil", texto: "Perfil" }` como **último** de `ITENS` (hambúrguer e abas mobile) |
+| `src/styles/custom.scss` | novas classes `.perfil-card` (card arredondado igual ao `auth-card`) e `.perfil-banner` (foto `ciclista-login.jpg`, mesmo padrão do `.auth-card__photo`) |
+
+**Como verificar:**
+
+- Desktop (>= 992px): abrir o hambúrguer em qualquer rota `/app/*` —
+  **Perfil** deve ser o último item do painel; clicar abre `/app/perfil`.
+- Mobile (< 992px): a barra de abas deve terminar com a aba escrita
+  **Perfil** (rolagem horizontal até o fim).
+- `/app/perfil`: banner com a foto do ciclista, 3 botões; **Sair** volta pra
+  `/login`; "Editar conta" e "Mudar perfil" não fazem nada ainda (esperado).
+
+### Verificação feita nesta rodada
+
+- `npm run lint` (oxlint): **0 warnings / 0 errors**.
+- `npm run build`: **ok** (só os avisos de deprecation do Sass já
+  documentados em `00-contexto-completo-do-projeto.md`).
+
+**Registro Git:**
+
+- `36c6e04` — Adiciona pagina Perfil com opcoes de editar conta, mudar perfil e logoff
+
+---
+
 ## Próximos passos (pendências do front-end — valem pra qualquer rodada)
 
 - Refinar as telas internas hoje rascunho: `Descoberta` (match), `Chat`
@@ -299,6 +410,8 @@ inalterado — a lista continua começando abaixo dos dois.
   Confronto, Excluir Ciclista.
 - Interfaces diferenciadas por perfil (Ciclista × Equipe) nas
   funcionalidades compartilhadas.
+- CRUD de Conta na página `/app/perfil` (os botões "Editar conta" e "Mudar
+  perfil" existem mas ainda não fazem nada — ver entrada de 2026-09-23).
 - Persistência de cadastro/login (localStorage; API real numa etapa futura).
 
 *(Nova entrada = nova seção acima desta linha.)*
