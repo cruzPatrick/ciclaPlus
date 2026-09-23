@@ -5,8 +5,7 @@ import Cadastro from "./pages/Cadastro.jsx";
 import AppLayout from "./components/layout/AppLayout.jsx";
 import Descoberta from "./pages/app/Descoberta.jsx";
 import Chat from "./pages/app/Chat.jsx";
-import TreinoIndividual from "./pages/app/TreinoIndividual.jsx";
-import TreinoEquipe from "./pages/app/TreinoEquipe.jsx";
+import Treino from "./pages/app/Treino.jsx";
 import Cronometro from "./pages/app/Cronometro.jsx";
 import Tempos from "./pages/app/Tempos.jsx";
 import Confronto from "./pages/app/Confronto.jsx";
@@ -24,8 +23,16 @@ export default function App() {
         <Route index element={<Navigate to="descoberta" replace />} />
         <Route path="descoberta" element={<Descoberta />} />
         <Route path="chat" element={<Chat />} />
-        <Route path="treino-individual" element={<TreinoIndividual />} />
-        <Route path="treino-equipe" element={<TreinoEquipe />} />
+        <Route path="treino" element={<Treino />} />
+        {/* Rotas antigas: redirecionam pra página única com o tipo certo. */}
+        <Route
+          path="treino-individual"
+          element={<Navigate to="/app/treino?tipo=individual" replace />}
+        />
+        <Route
+          path="treino-equipe"
+          element={<Navigate to="/app/treino?tipo=equipe" replace />}
+        />
         <Route path="cronometro" element={<Cronometro />} />
         <Route path="tempos" element={<Tempos />} />
         <Route path="confronto" element={<Confronto />} />
