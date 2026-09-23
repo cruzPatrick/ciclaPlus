@@ -1,11 +1,8 @@
-# Deploy automático do protótipo no GitHub Pages.
-# A cada push em main: build do Vite + publicação no Pages.
+# Deploy do protótipo no GitHub Pages.
+# Sem deploy automático: dispara apenas manualmente em Actions → Deploy to GitHub Pages → Run workflow.
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [main]
-  # Permite disparar manualmente em Actions → Deploy to GitHub Pages → Run
   workflow_dispatch:
 
 permissions:
