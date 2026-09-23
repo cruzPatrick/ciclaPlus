@@ -11,6 +11,7 @@ import Tempos from "./pages/app/Tempos.jsx";
 import Confronto from "./pages/app/Confronto.jsx";
 import Consultoria from "./pages/app/Consultoria.jsx";
 import Ranking from "./pages/app/Ranking.jsx";
+import Perfil from "./pages/app/Perfil.jsx";
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="confronto" element={<Confronto />} />
         <Route path="consultoria" element={<Consultoria />} />
         <Route path="ranking" element={<Ranking />} />
+        <Route path="perfil" element={<Perfil />} />
       </Route>
     </Routes>
   );

@@ -12,6 +12,8 @@ const ITENS = [
   { to: "confronto", texto: "Confrontos" },
   { to: "consultoria", texto: "Consultoria" },
   { to: "ranking", texto: "Ranking" },
+  // Sempre por último: parte de baixo do menu hambúrguer / última aba mobile.
+  { to: "perfil", texto: "Perfil" },
 ];
 
 // --------------------------------------------------------------------------

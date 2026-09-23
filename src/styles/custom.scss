@@ -93,6 +93,25 @@ $theme-colors: map-merge(
 }
 
 // --------------------------------------------------------------------------
+// Perfil — card que espelha o auth-card do login (mesma foto no topo),
+// só que com o conteúdo das opções da conta.
+// --------------------------------------------------------------------------
+.perfil-card {
+  max-width: 320px;
+  margin: 0 auto;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+.perfil-banner {
+  height: 180px;
+  background: $primary url("/images/ciclista-login.jpg") center center
+    no-repeat;
+  background-size: cover;
+}
+
+// --------------------------------------------------------------------------
 // Menu hamburguer (desktop, >= lg) — ícone fixo + overlay escuro/fosco.
 // Único trecho do projeto com um tema propositalmente escuro por enquanto
 // (o resto do app continua na paleta Cicla+ normal).
