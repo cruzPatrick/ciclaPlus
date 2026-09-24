@@ -7,7 +7,7 @@ const ITENS = [
   { to: "descoberta", texto: "Descobrir Ciclistas" },
   { to: "chat", texto: "Chat" },
   { to: "treino", texto: "Treino" },
-  { to: "cronometro", texto: "Cronometrar Desempenho" },
+  { to: "mapa", texto: "Mapa" },
   { to: "tempos", texto: "Gerenciar Tempos" },
   { to: "confronto", texto: "Confrontos" },
   { to: "consultoria", texto: "Consultoria" },

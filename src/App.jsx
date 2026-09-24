@@ -6,7 +6,7 @@ import AppLayout from "./components/layout/AppLayout.jsx";
 import Descoberta from "./pages/app/Descoberta.jsx";
 import Chat from "./pages/app/Chat.jsx";
 import Treino from "./pages/app/Treino.jsx";
-import Cronometro from "./pages/app/Cronometro.jsx";
+import Mapa from "./pages/app/Mapa.jsx";
 import Tempos from "./pages/app/Tempos.jsx";
 import Confronto from "./pages/app/Confronto.jsx";
 import Consultoria from "./pages/app/Consultoria.jsx";
@@ -34,7 +34,9 @@ export default function App() {
           path="treino-equipe"
           element={<Navigate to="/app/treino?tipo=equipe" replace />}
         />
-        <Route path="cronometro" element={<Cronometro />} />
+        <Route path="mapa" element={<Mapa />} />
+        {/* Rota antiga do Cronômetro: mantém link velho funcionando. */}
+        <Route path="cronometro" element={<Navigate to="/app/mapa" replace />} />
         <Route path="tempos" element={<Tempos />} />
         <Route path="confronto" element={<Confronto />} />
         <Route path="consultoria" element={<Consultoria />} />

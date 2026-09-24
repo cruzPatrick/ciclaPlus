@@ -2,10 +2,11 @@
 
 *Documento único que reúne o contexto geral do projeto e o histórico de
 alterações do front-end. Pensado para dar contexto completo a quem (humano ou
-IA) for continuar o desenvolvimento. Consolida os arquivos anteriores
-`00-contexto-completo-do-projeto.md`, `01-historico-de-alteracoes.md` e
-`02-historico-de-alteracoes.md` (o `01` era um snapshot antigo do histórico,
-todo absorvido pelo `02`).*
+IA) for continuar o desenvolvimento. **Este é o único MD da pasta `mudancas/`
+(a partir de 2026-09-24) — todos os anteriores foram consolidados aqui:
+`00-contexto-completo-do-projeto.md`, `01-historico-de-alteracoes.md`,
+`02-historico-de-alteracoes.md` e a versão inicial `README.md`.** nesse arquivo
+(era `README.md`; renomeado para `soul.md` a pedido do Patrick).
 
 ---
 
@@ -640,17 +641,174 @@ dados). Decisões combinadas:
 
 ---
 
+## 2026-09-23 — Cronômetro com geolocalização e mapa + Ranking por percurso
+
+*(Rodada feita pelo Claude — registrada no MD `01-historico-de-alteracoes.md`
+que ele gerou; consolidada aqui na fusão de todos os MDs no `soul.md`.)*
+
+### Contexto da rodada
+
+Ideia trazida pelo Patrick: usar geolocalização pra validar que o
+treino/confronto foi feito de fato numa ciclovia (evita "mentir" o tempo
+registrado), e o Ranking passar a considerar não só a pontuação geral, mas
+também o melhor tempo por percurso específico.
+
+Preocupação levantada: LGPD. Como o app ainda não tem backend, a decisão
+tomada foi capturar a localização só em memória (estado do componente),
+sem persistir ou enviar pra servidor nenhum — e pedir consentimento
+explícito, com uma tela própria explicando o motivo, antes do prompt
+nativo do navegador.
+
+### Mudança — `Cronometro.jsx`: consentimento + mapa Leaflet + rastreamento
+
+**Antes:** tela estática, botão "Iniciar Cronômetro" sem nenhuma ação.
+
+**Depois:** fluxo em três estados (`pendente` / `concedido` / `negado`):
+
+1. **Tela de consentimento** — explica por que a localização é necessária
+   e deixa claro que o dado não sai do navegador.
+2. **Concedido** — inicializa um mapa Leaflet (tiles do OpenStreetMap, sem
+   chave de API) centralizado na posição atual, com um marcador.
+3. **"Iniciar Cronômetro"** — liga `navigator.geolocation.watchPosition`
+   (rastreamento contínuo): marcador se move, `polyline` desenha o
+   trajeto, distância somada via Haversine (local, sem lib extra) e um
+   cronômetro (`setInterval` de 1s) mostra o tempo decorrido.
+4. **"Parar Cronômetro"** — limpa o `watchPosition` e o intervalo.
+5. **Negado / erro** — mensagem explicando que sem a permissão não dá pra
+   validar o confronto; dá pra tentar de novo.
+
+Todo o estado (posição, trajeto, tempo, distância) é local ao componente
+— nada é persistido, salvo em `localStorage` ou enviado pra fora do
+navegador.
+
+**Biblioteca usada:** [Leaflet](https://leafletjs.com/) + tiles do
+OpenStreetMap (não exige chave de API/cadastro).
+
+### Mudança — `Ranking.jsx`: ranking por percurso
+
+Duas tabelas — a geral (inalterada) e uma nova de "Melhores tempos por
+percurso", agrupando por nome de ciclovia, com ciclista, tempo e distância.
+Dados ainda locais/fixos (ex: `"Ciclovia da Orla"`).
+
+**Arquivos alterados nesta rodada:**
+
+| Arquivo | Mudança |
+| --- | --- |
+| `src/pages/app/Cronometro.jsx` | reescrito: consentimento, mapa Leaflet, rastreamento, cronômetro e distância |
+| `src/pages/app/Ranking.jsx` | nova tabela de melhores tempos por percurso |
+| `package.json` / `package-lock.json` | nova dependência: `leaflet` |
+
+**Verificação:** `npm run build` ok (aviso de chunk > 500 kB por causa do
+Leaflet) e `npm run lint` 0/0.
+
+### Pendências abertas desta rodada
+
+- **Percurso como entidade de verdade**: hoje "Ciclovia da Orla" é só uma
+  string solta no array do Ranking. Falta modelar coordenadas de início/fim
+  (ou referência ao trajeto gravado no mapa), pra validar de verdade se o
+  confronto aconteceu ali.
+- Conectar o resultado do cronômetro (tempo + trajeto) ao Ranking por
+  percurso e ao fluxo de Confronto (hoje são estados locais independentes).
+
+---
+
+## 2026-09-24 — Correções no mapa (bug do container + marcador errado) e renomeação Cronômetro → Mapa
+
+### Contexto da rodada
+
+Patrick reportou dois bugs na tela do Cronômetro e pediu renomeação:
+
+1. **"Map container not found"** no DevTools (F12) — o mapa não aparecia.
+2. **Marcador no lugar errado** — o mapa abria mostrando o Maracanã em vez
+   da localização real.
+3. Renomear a página/menu de "Cronometrar Desempenho" para **"Mapa"**.
+
+### Bug 1 — "Map container not found" (corrida de timing)
+
+**Causa raiz:** `iniciarMapa()` era chamado via
+`setTimeout(() => iniciarMapa(posicao), 0)` logo após
+`setConsentimento("concedido")`. O `setTimeout(0)` **não garante** que o
+React (v19, batch + scheduler via `MessageChannel`) já commitou o `<div
+ref={mapaRef}>` no DOM — o timeout podia disparar antes do render.
+Resultado: `mapaRef.current === null` → `L.map(null)` → erro, mapa nunca
+criado (área em branco).
+
+**Solução:** guardar a posição num ref (`posicaoInicialRef`) e criar o
+mapa num `useEffect([consentimento])` — effects rodam **depois** do commit
+do DOM, então o `<div>` sempre existe. Guarda extra
+(`mapaInstanciaRef.current`) evita dupla inicialização (StrictMode).
+
+### Bug 2 — marcador no Maracanã (posição inicial imprecisa)
+
+**Causa raiz:** a primeira leitura de `getCurrentPosition` frequentemente
+vem de **estimativa por IP/cache** (metros a km de distância — cai no
+centro da cidade), e o `watchPosition` só era ligado ao apertar "Iniciar
+Cronômetro" — até lá, o marcador ficava preso no fix inicial errado.
+
+**Solução (três partes):**
+
+1. `getCurrentPosition`/`watchPosition` agora usam
+   `{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }` —
+   `maximumAge: 0` proíbe posição em cache.
+2. `watchPosition` passa a ligar **junto com o mapa** (no mesmo
+  `useEffect`), não só ao iniciar o cronômetro: quando chega um fix mais
+  preciso, o marcador recentraliza sozinho. Distância/trajeto só acumulam
+  quando `rastreandoRef.current === true` (espelho síncrono do estado
+  `rastreando`).
+3. **Círculo de precisão** (`L.circle` com raio = `coords.accuracy`) ao
+  redor do marcador + indicador textual "Precisão: ±X m"; se
+  `accuracy > 1000 m`, alerta amarelo explicando que o navegador está
+  estimando sem GPS e como ativar a localização no Windows.
+
+### Mudança — renomeação "Cronometrar Desempenho" → "Mapa"
+
+| Arquivo | Mudança |
+| --- | --- |
+| `src/pages/app/Cronometro.jsx` | **renomeado** → `src/pages/app/Mapa.jsx`; componente `Cronometro` → `Mapa`; `h1` e textos da tela agora dizem "Mapa" |
+| `src/App.jsx` | import do `Mapa`; rota nova `mapa`; rota antiga `cronometro` vira `<Navigate to="/app/mapa">` (link velho continua funcionando) |
+| `src/components/layout/AppLayout.jsx` | item de menu `{ to: "mapa", texto: "Mapa" }` (continua sendo o penúltimo item; **Perfil** permanece o último) |
+
+Botões internos mantiveram o nome ("Iniciar Cronômetro" / "Parar
+Cronômetro") — só o nome da página/tela mudou, como pedido.
+
+**Observação:** a rota antiga `/app/cronometro` redireciona, então link
+antigo (inclusive no ar no GitHub Pages) não quebra.
+
+### Mudança — consolidação dos MDs da pasta `mudancas/`
+
+- Todos os MDs foram fusionados num único **`mudancas/soul.md`** (antes
+  `README.md`), renomeado a pedido:
+  - `00-contexto-completo-do-projeto.md` → Parte 1 do `soul.md`.
+  - `01-historico-de-alteracoes.md` (gerado pelo Claude, com a entrada da
+    geolocalização) → absorvido como seção do Parte 2.
+  - `02-historico-de-alteracoes.md` → já estava no `soul.md`.
+- Arquivo `01-historico-de-alteracoes.md` removido após o merge.
+
+### Verificação feita nesta rodada
+
+- `npm run lint` (oxlint): **0 warnings / 0 errors**.
+- `npm run build`: **ok** (aviso de chunk > 500 kB esperado por causa do
+  Leaflet; demais avisos são os deprecation do Sass já documentados).
+- Pendente de teste manual no navegador: marcador centralizar na localização
+  real (pode exigir ativar a localização do Windows/PC).
+
+---
+
 ## Próximos passos (pendências do front-end — valem pra qualquer rodada)
 
-- Refinar as telas internas hoje rascunho: `Descoberta` (match), `Chat`
-  (abrir conversa e enviar mensagens), `Tempos`, `Confronto`, `Consultoria`,
-  `Cronometro` (o botão "Iniciar Cronômetro" não faz nada ainda).
+- Telas ainda rascunho (sem interação real): `Tempos`, `Consultoria`.
+- Modelar o **percurso/ciclovia** como entidade de verdade (coordenadas de
+  início/fim), não só uma string solta — necessário pra validar Confronto
+  contra o trajeto gravado no Mapa de verdade.
+- Conectar os três estados locais hoje independentes: resultado do
+  cronômetro no Mapa (tempo + trajeto) → Ranking por percurso → fluxo de
+  Confronto.
+- CRUD de Conta na página `/app/perfil` (os botões "Editar conta" e "Mudar
+  perfil" existem mas ainda não fazem nada — ver entrada de 2026-09-23).
 - Cobrir lacunas da Matriz CRUD: CRUD de Equipe, Consultar/Cancelar
   Confronto, Excluir Ciclista.
 - Interfaces diferenciadas por perfil (Ciclista × Equipe) nas
   funcionalidades compartilhadas.
-- CRUD de Conta na página `/app/perfil` (os botões "Editar conta" e "Mudar
-  perfil" existem mas ainda não fazem nada — ver entrada de 2026-09-23).
 - Persistência de cadastro/login (localStorage; API real numa etapa futura).
 
 *(Nova entrada = nova seção acima desta linha.)*
