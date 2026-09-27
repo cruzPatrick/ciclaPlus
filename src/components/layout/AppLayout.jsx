@@ -4,7 +4,7 @@ import Footer from "./Footer.jsx";
 
 // Itens do menu como variável local do componente.
 const ITENS = [
-  { to: "descoberta", texto: "Descobrir Ciclistas" },
+  { to: "descoberta", texto: "Dar Match" },
   { to: "chat", texto: "Chat" },
   { to: "treino", texto: "Treino" },
   { to: "mapa", texto: "Mapa" },

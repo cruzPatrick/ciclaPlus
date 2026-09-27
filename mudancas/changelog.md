@@ -581,3 +581,32 @@ gigante misturando contexto, histórico e pendências) em três papéis claros.
 
 **Arquivos:** `mudancas/soul.md` (removido); `mudancas/SOUL.md`,
 `mudancas/backlog.md`, `mudancas/changelog.md` (novos).
+
+---
+
+## 2026-09-27 — Renomeação de menu/tela: "Descobrir Ciclistas" → "Dar Match"
+
+### Contexto da rodada
+
+A pedido do Patrick: mudar o nome da parte de descobrir ciclistas pra
+**"Dar Match"**. Só o nome exibido mudou — rota, arquivo e componente
+continuam os mesmos (`/app/descoberta`), pra não quebrar links internos
+nem o redirect do índice `/app`.
+
+### Mudança
+
+| Arquivo | Mudança |
+|---|---|
+| `src/components/layout/AppLayout.jsx` | item de menu `{ to: "descoberta", texto: "Dar Match" }` (hambúrguer desktop e abas mobile, que compartilham o array `ITENS`) |
+| `src/pages/app/Descoberta.jsx` | `h1` da tela: "Descobrir Ciclistas" → "Dar Match" |
+| `mudancas/SOUL.md` | exemplo de nomes de menu curtos atualizado (`Dar Match`, `Mapa`, `Ranking`) |
+
+**Como verificar:** abrir qualquer rota `/app/*` — o primeiro item do
+hambúrguer (desktop) e a primeira aba (mobile) devem aparecer como
+**Dar Match**; `/app/descoberta` mostra o `h1` "Dar Match".
+
+### Verificação feita nesta rodada
+
+- `npm.cmd run lint` (oxlint): **0 warnings / 0 errors**.
+- `npm.cmd run build`: **ok** (só os avisos esperados — deprecation do
+  Sass e chunk > 500 kB do Leaflet).

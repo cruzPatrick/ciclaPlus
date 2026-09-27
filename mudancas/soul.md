@@ -80,7 +80,7 @@ Rotas antigas mantidas como redirect: `treino-individual`, `treino-equipe`
 - Textos em **português do Brasil**, com `pt-BR` no `html lang`.
 - Mensagens de erro **explicam o próximo passo**, não só o problema.
 - Microcopy de privacidade **clara e honesta** (dado não sai do navegador).
-- Nomes de menu curtos (`Descobrir Ciclistas`, `Mapa`, `Ranking`).
+- Nomes de menu curtos (`Dar Match`, `Mapa`, `Ranking`).
 - IA assistindo: este documento é a fonte de verdade; mudanças de regra só
   por alteração explícita nele.
 
