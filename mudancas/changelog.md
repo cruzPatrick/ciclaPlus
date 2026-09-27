@@ -610,3 +610,99 @@ hambúrguer (desktop) e a primeira aba (mobile) devem aparecer como
 - `npm.cmd run lint` (oxlint): **0 warnings / 0 errors**.
 - `npm.cmd run build`: **ok** (só os avisos esperados — deprecation do
   Sass e chunk > 500 kB do Leaflet).
+
+---
+
+## 2026-09-27 — Dar Match em fila de cards, Chat responsivo e Treino com lista de marcados
+
+### Contexto da rodada
+
+Refinamento de front-end das três telas: transformar a página **Dar Match**
+numa fila de avaliação de cards (estilo "swipe"), dar ao **Chat** um
+layout que muda de verdade no mobile, e fazer o **Treino** deixar de ser
+só um form inerte — o agendamento agora alimenta uma lista de treinos
+marcados. Tudo ainda com dados locais (regra 1: sem backend).
+
+### Mudança 1 — `src/pages/app/Descoberta.jsx` (Dar Match): grid → fila de cards
+
+**Antes:** grade de cards (`row`/`col-md-6`/`col-lg-4`) onde cada card
+tinha um botão de texto "Dar Match"; depois de clicar, virava o badge
+"Match dado ✓" e o card ficava parado ocupando espaço.
+
+**Depois:**
+
+- **`CardCandidato`** (componente novo, extraído): avatar circular com
+  Material Icons (`person`), nome, `tipo · distância`, e dois botões
+  circulares de 48px — **passar** (`close`, outline) e **dar match**
+  (`favorite`, primary) — com `aria-label` por candidato.
+- **Modelo de dado mudou:** `estiloPedal`/`deuMatch: boolean` →
+  `tipo`/`status: "pendente" | "passou" | "match"`. A função virou
+  `avaliar(id, status)`.
+- **Mobile (`d-lg-none`):** só **um card por vez** — o primeiro da fila
+  `pendentes` (`maxWidth: 300px`, centralizado). Ao decidir, o próximo
+  aparece sozinho.
+- **Desktop (`d-none d-lg-flex`):** todos os pendentes lado a lado
+  (`flex-wrap gap-3`, cards de 220px).
+- **Estado vazio:** quando não sobra pendente,
+  "Sem novos ciclistas por perto no momento."
+- Cards avaliados (`passou`/`match`) saem da fila — antes ficavam na tela.
+
+### Mudança 2 — `src/pages/app/Chat.jsx`: um layout por breakpoint
+
+**Antes:** um único layout de 4+8 colunas (lista + conversa) servindo
+tanto mobile quanto desktop — no celular as duas metades ficavam
+espremidas empilhadas.
+
+**Depois:**
+
+- Componentes extraídos: **`ItemConversa`** (item da lista com ícone
+  `account_circle`, nome e `distanciaKm`) e **`ThreadConversa`**
+  (histórico de mensagens + form de envio) — reusados nos dois layouts.
+- **Mobile (`d-lg-none`):** estado `telaMobile` (`"lista"` | `"thread"`)
+  — **uma tela por vez**: lista → ao tocar numa conversa abre a thread
+  com botão **Voltar** (`arrow_back`); nunca aparecem juntas.
+- **Desktop (`d-none d-lg-block`):** lista (`col-lg-4`) e thread
+  (`col-lg-8`) lado a lado, como antes.
+- Conversas ganharam `distanciaKm`; bolhas seguem a paleta (Você →
+  `bg-primary` à direita; outro → `bg-ciclagrey`).
+
+### Mudança 3 — `src/pages/app/Treino.jsx`: agendar agora cria registros
+
+**Antes:** `onSubmit={previneEnvio}` nos dois forms — só evitavam o
+reload da SPA, nada era criado.
+
+**Depois:**
+
+- **`marcarTreino(evento)`** lê os campos com `FormData`, monta
+  `{ id: Date.now(), data, hora, tipo, feito: false }`, acrescenta em
+  `treinosMarcados` (estado novo, com 1 item semente) e faz
+  `evento.target.reset()`. Inputs com `required`.
+- **Nova coluna "Marcados"** (`col-lg-8`, `table striped`): Data, Hora,
+  Tipo (`RATULO_TIPO`) e checkbox **Feito** — `alternarFeito(id)` alterna
+  o estado; o form fica em `col-lg-4`.
+- Layout dos forms virou `row g-4` (form à esquerda, tabela à direita),
+  em vez das duas `section` empilhadas.
+
+**Arquivos alterados:**
+
+| Arquivo | Mudança |
+|---|---|
+| `src/pages/app/Descoberta.jsx` | fila de cards com `CardCandidato`, `status` por candidato, layout mobile (1 por vez) × desktop (grade) |
+| `src/pages/app/Chat.jsx` | `ItemConversa` + `ThreadConversa` extraídos; `telaMobile` (lista ↔ thread) no mobile; desktop lado a lado |
+| `src/pages/app/Treino.jsx` | `marcarTreino` com `FormData`, lista `treinosMarcados` + tabela "Marcados" com checkbox Feito |
+
+**Como verificar:**
+
+- `/app/descoberta` — desktop: 3 cards com X/coração; clicar num card o
+  remove da fila. Mobile (< 992px): um card por vez; esgotar a fila mostra
+  a mensagem de vazio.
+- `/app/chat` — desktop: lista + conversa lado a lado; mobile: só a
+  lista, tocar abre a conversa com "Voltar".
+- `/app/treino` — preencher data/hora e "Agendar": o treino aparece na
+  tabela "Marcados"; o checkbox Feito marca/desmarca.
+
+### Verificação feita nesta rodada
+
+- `npm.cmd run lint` (oxlint): **0 warnings / 0 errors**.
+- `npm.cmd run build`: **ok** (só os avisos esperados — deprecation do
+  Sass e chunk > 500 kB do Leaflet).
