@@ -706,3 +706,199 @@ reload da SPA, nada era criado.
 - `npm.cmd run lint` (oxlint): **0 warnings / 0 errors**.
 - `npm.cmd run build`: **ok** (só os avisos esperados — deprecation do
   Sass e chunk > 500 kB do Leaflet).
+
+---
+
+## 2026-09-29 — Rodada Gemini: semântica HTML5 + a11y, swipe no Dar Match, aceite duplo no Confronto, Tempos funcional e nova cara do Cronômetro
+
+### Contexto da rodada
+
+Refinamento de front-end de **6 páginas** com apoio do **Gemini**. O
+registro que ele gerou (`mudancas/gemini-code-1790690927316.md`) foi
+**mergeado neste changelog** a pedido — um único histórico de verdade —
+e o arquivo avulso removido após a fusão (mesmo precedente da fusão de
+2026-09-24). Conteúdo do MD do Gemini aparece abaixo como
+*"registro do Gemini"*; os detalhes extras vêm da leitura das diffs.
+
+### 1. `Login` (`/login`)
+
+*Registro do Gemini: substituição de alertas por elementos semânticos e
+melhoria de acessibilidade/estrutura do form.*
+
+- **Erro de credenciais:** `div.alert.alert-danger` → **`<aside>`**
+  estilizado (`bg-light border border-danger text-danger rounded p-2`)
+  — mesma regra de "sem alerta genérico" da seção de regras abaixo.
+- **Semântica:** `div.auth-card` → `<article>`, foto → `<figure>`, bloco
+  de conteúdo → `<section>`, título/apresentação → `<header>`, campos
+  `.form-floating` → `<section>`.
+
+### 2. `Dar Match / Descoberta` (`/app/descoberta`)
+
+*Registro do Gemini: gestos de swipe no mobile com feedback visual e
+grade estática no desktop.*
+
+- **Mobile (swipe):** `CardCandidato` ganhou arraste por touch
+  (`touchStart/Move/End`, threshold de **100 px**): arrastar pra
+  **direita = match**, pra **esquerda = passar**. Durante o arraste o
+  card acompanha o dedo (`translate3d` + `rotate(dx × 0.1)`) e mostra o
+  selo **MATCH** (verde, `aside`, opacidade proporcional ao arraste) ou
+  **PASSAR** (vermelho). Soltou dentro do threshold = card volta pro
+  lugar. `touch-action: pan-y` pra não brigar com a rolagem.
+- **Desktop:** continua a grade estática com os botões X/coração
+  (`isMobile={false}` — sem arraste).
+- **Instrução temporária:** "👈 Arraste para passar | Arraste para dar
+  match 👉" aparece abaixo do card no mobile e some sozinha **1 s** após
+  abrir a tela (`setTimeout`).
+- **Semântica:** card → `<article>`, avatar → `<figure>`, nome/perfil →
+  `<header>`, botões → `<nav>`, mensagem de fila vazia → `<aside>`.
+
+### 3. `Cronômetro / Mapa` (`/app/mapa`)
+
+*Registro do Gemini: layout responsivo, fluxo de permissão ajustado e
+avisos de precisão via `<aside>`.*
+
+- **Títulos:** "Mapa" → **"Cronometrar percurso"** nas duas telas
+  (consentimento e mapa). ⚠️ o item do menu também mudou (ver seção 6) —
+  o `SOUL.md` ainda diz "Mapa" (pendência no `backlog.md`).
+- **Tela de consentimento:** vira um **card centralizado**
+  (`min-vh-100`, `maxWidth: 480px`) com o texto de LGPD e o botão
+  "Permitir localização e continuar" em largura total.
+- **Tela do mapa:** container centralizado de `720px`; **timer e
+  distância** num painel (`<article>` com rótulos "Timer"/"Distância");
+  iniciar/parar viraram **botões circulares de 44px** com ícone
+  (`play_arrow`/`stop`) e `aria-label`. O indicador inline "Precisão:
+  ±X m" saiu da barra — a precisão agora aparece só no **aviso**
+  (`<aside>` amarelo) quando `accuracy > 1000 m`.
+- **Mapa:** `<div>` → **`<figure>`** com 450px de altura, borda arredondada
+  de `1rem`, `border-primary-subtle` e `shadow-sm`.
+- **Avisos de erro/permissão:** `alert` → `<aside>` estilizado.
+- **Observação:** os comentários explicativos do arquivo (corrida de
+  timing do Leaflet, `maximumAge: 0`, Haversine...) foram **removidos** —
+  o contexto histórico continua documentado nesta e nas entradas antigas.
+
+### 4. `Gerenciar Tempos` (`/app/tempos`)
+
+*Registro do Gemini: centralização/limite de largura, barra de ações
+responsiva e modo de edição.*
+
+- **De rascunho a funcional:** a tela agora tem lista local de trajetos
+  (4 itens semente: nome, tempo, distância), **busca por nome**
+  (`input type="search"` + botão com ícone, `aria-label`), estado vazio
+  ("Nenhum trajeto encontrado." em `<aside>`) e **exclusão** de trajeto.
+- **Modo de edição:** botão **Editar/Concluir** alterna `modoEdicao`; no
+  modo edição cada trajeto ganha o botão de excluir (ícone `delete`).
+  No **desktop** o botão fica na barra de topo à direita; no **mobile**,
+  num `<footer>` no rodapé da página.
+- **Layout:** container centralizado com `maxWidth: 720px`; h1
+  "Gerenciar Tempo" centralizado no mobile.
+- **Semântica:** `<header>`, `<nav>` (barra), `<article>` (cards),
+  `<section>`, `<footer>`, `<aside>` (estado vazio).
+
+### 5. `Confrontos` (`/app/confronto`)
+
+*Registro do Gemini: fluxo de aceite duplo — só matches podem ser
+desafiados e o confronto tem estados de status.*
+
+- **Só desafia quem deu match:** o input de texto livre virou
+  **`<select>`** alimentado por `minhosMatches` (lista local que espelha
+  os matches da aba Dar Match), com `required` e label
+  `visually-hidden`.
+- **Aceite duplo — novos status:**
+
+  | Status | Rótulo (badge) | Ação disponível |
+  |---|---|---|
+  | `pendente_aceite_adversario` | Aguardando adversário | — (só espera) |
+  | `pendente_meu_aceite` | Aguardando seu aceite | **Aceitar Confronto** |
+  | `confirmado` | Confronto Autorizado | **Vitória** / **Derrota** |
+  | `resultado_registrado` | Resultado registrado | **Encerrar** |
+  | `encerrado` | Encerrado | — |
+
+- Ao marcar um desafio novo, o confronto nasce em
+  `pendente_aceite_adversario`; `aceitarDesafio` leva
+  `pendente_meu_aceite` → `confirmado` (o velho "Confirmar Confronto"
+  sumiu). Botões encurtaram (Vitória/Derrota/Encerrar).
+- **Layout:** container `720px` centralizado; form num card "Desafiar um
+  Match"; lista virou cards (`<article>`) em vez de `list-group`.
+- **Semântica:** `<header>`, `<nav>` (ações), `<article>`, `<section>`,
+  `<aside>` não usado aqui.
+
+### 6. `AppLayout` (menu da área interna) — observado nas diffs
+
+- **Item de menu `mapa`: "Mapa" → "Cronômetro"** (a rota continua
+  `/app/mapa`; nenhum link quebra). ⚠️ conflito documentado com o
+  `SOUL.md`, que ainda lista "Mapa" como nome de menu.
+- **Semântica:** container externo do menu desktop e das abas mobile
+  viraram `<nav>`; overlay, painel e scroll de abas viraram `<section>`.
+
+---
+
+## 📐 Regras de layout e design aplicadas *(mergeadas do MD do Gemini)*
+
+1. **Substituição de alertas globais:** nenhum alerta genérico (`.alert`
+   do Bootstrap ou `alert()` do JS) pra avisos/erros — usar **`<aside>`**
+   com estilização leve (bordas suaves, fundo neutro) e mensagem clara
+   que aponta o próximo passo. *(Conferido nesta rodada: zero
+   ocorrências de `alert` em `src/`.)*
+2. **Navegação adaptativa:** desktop (`d-lg-block`) = menu lateral
+   retrátil (overlay + painel) por hambúrguer, com fechamento por `ESC`;
+   mobile (`d-lg-none`) = barra de abas com rolagem horizontal e
+   indicador deslizante sincronizado com a rota.
+3. **Semântica HTML5 e acessibilidade:** uso de `<main>`, `<header>`,
+   `<article>`, `<nav>`, `<aside>`, `<figure>` e `<footer>` no lugar de
+   `<div>` genéricas; rótulos pra leitores de tela (`aria-label`,
+   `visually-hidden`) em botões de ação e campos de busca.
+
+---
+
+**Arquivos alterados nesta rodada:**
+
+| Arquivo | Mudança |
+|---|---|
+| `src/pages/Login.jsx` | erro em `<aside>`; semântica `article/figure/section/header` |
+| `src/pages/app/Descoberta.jsx` | swipe com selos MATCH/PASSAR no mobile; instrução temporária; semântica |
+| `src/pages/app/Mapa.jsx` | telas "Cronometrar percurso"; painel timer/distância; botões circulares; mapa 450px arredondado; avisos em `<aside>` |
+| `src/pages/app/Tempos.jsx` | lista de trajetos + busca + modo edição/exclusão; container 720px |
+| `src/pages/app/Confronto.jsx` | aceite duplo (5 status), select só com matches, cards |
+| `src/components/layout/AppLayout.jsx` | menu "Cronômetro"; `div` → `nav`/`section` |
+| `mudancas/gemini-code-1790690927316.md` | **removido** — conteúdo mergeado nesta entrada |
+
+**Como verificar:**
+
+- `/login` — errar a senha: o erro aparece num `<aside>` vermelho (sem
+  `.alert`), não num `alert()` do navegador.
+- `/app/descoberta` — no mobile, arrastar o card pra direita/esquerda:
+  selo MATCH/PASSAR e o card sai da fila; instrução some após 1s. No
+  desktop, grade com botões.
+- `/app/mapa` — consentimento em card centralizado; depois, timer +
+  distância no painel, play/stop redondos e mapa maior arredondado.
+- `/app/tempos` — buscar filtra; Editar → ícone de excluir em cada card;
+  "Concluir" sai do modo edição.
+- `/app/confronto` — select só lista os matches; confronto novo nasce
+  "Aguardando adversário"; o de "Aguardando seu aceite" tem botão
+  Aceitar; só "Confronto Autorizado" registra Vitória/Derrota.
+
+### Observações desta rodada
+
+- Nome do menu/tela divergiu dos docs: código agora usa **"Cronômetro"**
+  (menu) e **"Cronometrar percurso"** (h1), `SOUL.md` ainda diz "Mapa" —
+  pendência registrada no `backlog.md`.
+- Instrução de swipe do Dar Match dura só **1 s** (talvez curto demais —
+  avaliar se vale deixar até o primeiro swipe).
+- Comentários explicativos do código das 6 páginas foram removidos
+  (contexto preservado neste changelog).
+- Arquivos salvos sem newline final (`\ No newline at end of file`).
+- **Ajuste de lint nesta rodada:** a remoção do
+  `// eslint-disable-next-line react-hooks/exhaustive-deps` expôs 2
+  warnings novos do oxlint (`react(immutability)` em `Mapa.jsx` —
+  `iniciarMapa`/`atualizarPosicao` lidas no `useEffect` antes da
+  declaração). Corrigido movendo as duas funções pra **antes** do effect
+  que as usa (mesmo comportamento em runtime, hoisting — só a ordem no
+  arquivo mudou).
+
+### Verificação feita nesta rodada
+
+- `npm.cmd run lint` (oxlint): **0 warnings / 0 errors** (2 warnings
+  introduzidos pela rodada foram corrigidos — ver observação acima).
+- `npm.cmd run build`: **ok** (`EXIT=0`; `dist/index.html` e
+  `dist/404.html` gerados; só os avisos esperados — deprecation do Sass
+  e chunk > 500 kB do Leaflet).

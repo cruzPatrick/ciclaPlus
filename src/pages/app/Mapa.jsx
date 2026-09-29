@@ -5,16 +5,12 @@ import iconeMarcador from "leaflet/dist/images/marker-icon.png";
 import iconeMarcador2x from "leaflet/dist/images/marker-icon-2x.png";
 import iconeSombra from "leaflet/dist/images/marker-shadow.png";
 
-// Vite não resolve os ícones padrão do Leaflet sozinho — sem isso o
-// marcador do mapa aparece quebrado (ícone 404).
 L.Icon.Default.mergeOptions({
   iconUrl: iconeMarcador,
   iconRetinaUrl: iconeMarcador2x,
   shadowUrl: iconeSombra,
 });
 
-// Distância em metros entre dois pontos (fórmula de Haversine) — usada só
-// pra somar o percurso registrado, sem nenhuma lib extra.
 function distanciaMetros(a, b) {
   const R = 6371000;
   const toRad = (graus) => (graus * Math.PI) / 180;
@@ -36,63 +32,30 @@ function formatarTempo(ms) {
 }
 
 export default function Mapa() {
-  // "pendente" | "concedido" | "negado" — controla qual tela aparece.
   const [consentimento, setConsentimento] = useState("pendente");
   const [erro, setErro] = useState("");
   const [rastreando, setRastreando] = useState(false);
   const [tempoMs, setTempoMs] = useState(0);
   const [distanciaM, setDistanciaM] = useState(0);
-  const [precisaoM, setPrecisaoM] = useState(null); // raio de incerteza do fix
+  const [precisaoM, setPrecisaoM] = useState(null);
 
-  const mapaRef = useRef(null); // <div> do mapa
-  const mapaInstanciaRef = useRef(null); // instância do Leaflet
-  const posicaoInicialRef = useRef(null); // primeira posição, guardada até o <div> existir
+  const mapaRef = useRef(null);
+  const mapaInstanciaRef = useRef(null);
+  const posicaoInicialRef = useRef(null);
   const posicaoAtualRef = useRef(null);
-  const precisaoAnteriorRef = useRef(null); // melhor precisão já vista
-  const rastreandoRef = useRef(false); // espelho síncrono de `rastreando`
+  const precisaoAnteriorRef = useRef(null);
+  const rastreandoRef = useRef(false);
   const marcadorRef = useRef(null);
-  const circuloRef = useRef(null); // círculo de precisão ao redor do marcador
+  const circuloRef = useRef(null);
   const linhaRef = useRef(null);
-  const trajetoRef = useRef([]); // pontos do percurso — não precisa re-render a cada ponto
+  const trajetoRef = useRef([]);
   const watchIdRef = useRef(null);
   const inicioRef = useRef(null);
   const intervaloRef = useRef(null);
 
-  // Some com o mapa e os listeners do navegador se a pessoa sair da tela.
-  useEffect(() => {
-    return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
-      if (intervaloRef.current) clearInterval(intervaloRef.current);
-      if (mapaInstanciaRef.current) mapaInstanciaRef.current.remove();
-    };
-  }, []);
-
-  // Inicializa o mapa só DEPOIS que o React commitou o <div> (useEffect roda
-  // após o DOM existir — um setTimeout(0) aqui era uma condição de corrida:
-  // o timeout podia disparar antes do render e o Leaflet quebrava com
-  // "Map container not found"). O guarda evita dupla inicialização.
-  //
-  // O watchPosition também começa AQUI (e não só ao apertar "Iniciar"): a
-  // primeira posição costuma vir "grosseira" (estimada por IP/cache do
-  // navegador, caindo longe — ex.: centro do Rio) e só um fix posterior,
-  // mais preciso, coloca o marcador no lugar certo.
-  useEffect(() => {
-    if (consentimento !== "concedido") return;
-    if (mapaInstanciaRef.current || !mapaRef.current) return;
-    if (!posicaoInicialRef.current) return;
-
-    iniciarMapa(posicaoInicialRef.current);
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      atualizarPosicao,
-      () => setErro("Perdemos o sinal de localização."),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [consentimento]);
-
+  // Declaradas ANTES do useEffect que as usa: sem isso o lint acusa
+  // "acesso durante a própria inicialização" (a ordem antiga era segura
+  // só por hoisting).
   function iniciarMapa(posicaoInicial) {
     const { latitude, longitude, accuracy } = posicaoInicial.coords;
 
@@ -107,8 +70,6 @@ export default function Mapa() {
     marcadorRef.current = L.marker([latitude, longitude]).addTo(
       mapaInstanciaRef.current
     );
-    // Mostra o raio de incerteza do GPS: quanto maior o círculo, menos
-    // certeza temos do ponto real.
     circuloRef.current = L.circle([latitude, longitude], {
       radius: accuracy || 0,
       color: "#357266",
@@ -126,8 +87,6 @@ export default function Mapa() {
     trajetoRef.current = [{ lat: latitude, lng: longitude }];
   }
 
-  // Chamado a cada nova posição (watchPosition). Move marcador/círculo;
-  // só soma distância e desenha trajeto quando o cronômetro está rodando.
   function atualizarPosicao(posicao) {
     if (!mapaInstanciaRef.current) return;
     const { latitude, longitude, accuracy } = posicao.coords;
@@ -144,8 +103,7 @@ export default function Mapa() {
     setPrecisaoM(accuracy ?? anterior);
 
     if (rastreandoRef.current) {
-      const ultimoPonto =
-        trajetoRef.current[trajetoRef.current.length - 1];
+      const ultimoPonto = trajetoRef.current[trajetoRef.current.length - 1];
       if (ultimoPonto) {
         setDistanciaM((atual) => atual + distanciaMetros(ultimoPonto, novoPonto));
         trajetoRef.current = [...trajetoRef.current, novoPonto];
@@ -153,20 +111,38 @@ export default function Mapa() {
       }
       mapaInstanciaRef.current.panTo(novoPonto);
     } else if (melhorou) {
-      // Fix mais preciso chegou (ex.: saiu da estimativa por IP pro GPS de
-      // verdade): recentraliza no ponto novo sem bagunçar a rolagem do
-      // usuário enquanto ele explora o mapa.
       mapaInstanciaRef.current.panTo(novoPonto);
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      if (intervaloRef.current) clearInterval(intervaloRef.current);
+      if (mapaInstanciaRef.current) mapaInstanciaRef.current.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (consentimento !== "concedido") return;
+    if (mapaInstanciaRef.current || !mapaRef.current) return;
+    if (!posicaoInicialRef.current) return;
+
+    iniciarMapa(posicaoInicialRef.current);
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      atualizarPosicao,
+      () => setErro("Perdemos o sinal de localização."),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [consentimento]);
 
   function pedirLocalizacao() {
     setErro("");
     navigator.geolocation.getCurrentPosition(
       (posicao) => {
-        // Guarda a posição e deixa o useEffect (que roda após o render do
-        // <div> do mapa) criar o mapa — ver comentário no useEffect.
-        // maximumAge: 0 proíbe posição em cache (que pode estar errada).
         posicaoInicialRef.current = posicao;
         setConsentimento("concedido");
       },
@@ -193,7 +169,6 @@ export default function Mapa() {
       setTempoMs(Date.now() - inicioRef.current);
     }, 1000);
 
-    // Zera o trajeto desenhado de uma sessão anterior.
     if (posicaoAtualRef.current) {
       trajetoRef.current = [posicaoAtualRef.current];
       linhaRef.current.setLatLngs(trajetoRef.current);
@@ -203,8 +178,6 @@ export default function Mapa() {
   function pararCronometro() {
     rastreandoRef.current = false;
     setRastreando(false);
-    // O watch continua ligado (só o marcador/precisão seguem atualizando);
-    // ele é removido ao sair da página, no cleanup do useEffect.
     if (intervaloRef.current) {
       clearInterval(intervaloRef.current);
       intervaloRef.current = null;
@@ -213,76 +186,97 @@ export default function Mapa() {
 
   if (consentimento === "pendente" || consentimento === "negado") {
     return (
-      <main className="container py-4" style={{ maxWidth: "520px" }}>
-        <h1 className="h3">Mapa</h1>
-        <p>
-          Pra cronometrar seu treino e confirmar que ele foi feito numa
-          ciclovia (importante pra validar confrontos), precisamos da sua
-          localização durante o percurso.
-        </p>
-        <p className="small text-body-secondary">
-          Isso fica só no seu navegador enquanto a página está aberta — não
-          enviamos sua localização pra nenhum servidor.
-        </p>
+      <main className="container py-4 d-flex flex-column align-items-center justify-content-center min-vh-100">
+        <article className="card shadow-sm p-4 text-center" style={{ maxWidth: "480px", width: "100%" }}>
+          <header>
+            <h1 className="h3 mb-3">Cronometrar percurso</h1>
+          </header>
+          <p className="text-body-secondary mb-3">
+            Para cronometrar seu treino e validar o percurso na ciclovia, precisamos do acesso à sua localização.
+          </p>
+          <p className="small text-body-secondary mb-4">
+            A sua localização fica gravada somente na memória local do navegador durante o uso.
+          </p>
 
-        {erro && (
-          <div className="alert alert-danger py-2 small" role="alert">
-            {erro}
-          </div>
-        )}
+          {erro && (
+            <aside className="bg-light border border-danger text-danger rounded p-2 small mb-3">
+              {erro}
+            </aside>
+          )}
 
-        <button type="button" className="btn btn-primary" onClick={pedirLocalizacao}>
-          Permitir localização e continuar
-        </button>
+          <button type="button" className="btn btn-primary w-100" onClick={pedirLocalizacao}>
+            Permitir localização e continuar
+          </button>
+        </article>
       </main>
     );
   }
 
   return (
-    <main className="container py-4">
-      <h1 className="h3">Mapa</h1>
+    <main className="container py-4 d-flex flex-column align-items-center">
+      <section className="w-100" style={{ maxWidth: "720px" }}>
+        <header>
+          <h1 className="h3 mb-4 text-center text-lg-start">Cronometrar percurso</h1>
+        </header>
 
-      <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
-        <span className="fs-4 fw-bold">{formatarTempo(tempoMs)}</span>
-        <span className="text-body-secondary">
-          {(distanciaM / 1000).toFixed(2)} km percorridos
-        </span>
-        {precisaoM != null && (
-          <span className="text-body-secondary small">
-            Precisão: ±
-            {precisaoM >= 1000
-              ? `${(precisaoM / 1000).toFixed(1)} km`
-              : `${Math.round(precisaoM)} m`}
-          </span>
+        <nav className="d-flex align-items-center justify-content-end gap-3 mb-3">
+          {!rastreando ? (
+            <button
+              type="button"
+              className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+              style={{ width: "44px", height: "44px" }}
+              aria-label="Iniciar cronômetro"
+              onClick={iniciarCronometro}
+            >
+              <span className="material-icons">play_arrow</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-danger rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+              style={{ width: "44px", height: "44px" }}
+              aria-label="Parar cronômetro"
+              onClick={pararCronometro}
+            >
+              <span className="material-icons">stop</span>
+            </button>
+          )}
+
+          <article className="border rounded px-3 py-2 bg-white shadow-sm d-flex gap-4 align-items-center">
+            <section>
+              <span className="d-block small text-body-secondary fw-semibold">Timer</span>
+              <span className="fs-5 fw-bold">{formatarTempo(tempoMs)}</span>
+            </section>
+            <section className="border-start ps-3">
+              <span className="d-block small text-body-secondary fw-semibold">Distância</span>
+              <span className="fs-5 fw-bold">{(distanciaM / 1000).toFixed(2)} km</span>
+            </section>
+          </article>
+        </nav>
+
+        {precisaoM != null && precisaoM > 1000 && (
+          <aside className="bg-light border border-warning text-warning-emphasis rounded p-2 small text-center mb-3">
+            Localização imprecisa (mais de 1 km de margem). Verifique o GPS do dispositivo.
+          </aside>
         )}
 
-        {!rastreando ? (
-          <button type="button" className="btn btn-primary" onClick={iniciarCronometro}>
-            Iniciar Cronômetro
-          </button>
-        ) : (
-          <button type="button" className="btn btn-outline-danger" onClick={pararCronometro}>
-            Parar Cronômetro
-          </button>
+        {erro && (
+          <aside className="bg-light border border-warning text-warning-emphasis rounded p-2 small text-center mb-3">
+            {erro}
+          </aside>
         )}
-      </div>
 
-      {precisaoM != null && precisaoM > 1000 && (
-        <div className="alert alert-warning py-2 small" role="alert">
-          Localização imprecisa (mais de 1 km de margem): o navegador está
-          estimando a posição sem GPS. Ative a localização do dispositivo
-          (Windows: Configurações → Privacidade → Localização) e recarregue
-          a página.
-        </div>
-      )}
-
-      {erro && (
-        <div className="alert alert-warning py-2 small" role="alert">
-          {erro}
-        </div>
-      )}
-
-      <div ref={mapaRef} style={{ height: "360px", borderRadius: "0.5rem" }} />
+        <figure
+          ref={mapaRef}
+          className="shadow-sm border border-2 border-primary-subtle m-0"
+          style={{
+            height: "450px",
+            width: "100%",
+            borderRadius: "1rem",
+            overflow: "hidden",
+          }}
+        />
+      </section>
     </main>
   );
 }

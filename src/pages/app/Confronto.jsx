@@ -1,35 +1,53 @@
 import { useState } from "react";
 
-// Rótulo e cor de cada status do confronto, seguindo o fluxo da Matriz CRUD:
-// pendente -> confirmado -> resultado_registrado -> encerrado
+// Estados do confronto com fluxo de dupla confirmação:
+// pendente_aceite_adversario -> aguarda o outro aceitar
+// pendente_meu_aceite -> aguarda a sua aceitação
+// confirmado -> ambos aceitaram (autorizado para disputar)
+// resultado_registrado -> tempo/resultado enviado
+// encerrado -> confronto concluído
 const STATUS = {
-  pendente: { rotulo: "Pendente", cor: "secondary" },
-  confirmado: { rotulo: "Confirmado", cor: "primary" },
+  pendente_aceite_adversario: { rotulo: "Aguardando adversário", cor: "secondary" },
+  pendente_meu_aceite: { rotulo: "Aguardando seu aceite", cor: "warning" },
+  confirmado: { rotulo: "Confronto Autorizado", cor: "primary" },
   resultado_registrado: { rotulo: "Resultado registrado", cor: "ciclagrey" },
   encerrado: { rotulo: "Encerrado", cor: "dark" },
 };
 
 export default function Confronto() {
-  // Confrontos como dado local do componente.
-  const [confrontos, setConfrontos] = useState([
-    { id: 1, adversario: "Bruno Costa", status: "pendente", resultado: null },
-    { id: 2, adversario: "Camila Rocha", status: "confirmado", resultado: null },
+  // Lista simulada de utilizadores com quem deu MATCH na aba "Dar Match"
+  const [minhosMatches] = useState([
+    { id: 101, nome: "Ana Beatriz" },
+    { id: 102, nome: "Bruno Costa" },
+    { id: 103, nome: "Camila Rocha" },
   ]);
-  const [novoAdversario, setNovoAdversario] = useState("");
+
+  // Lista local de confrontos
+  const [confrontos, setConfrontos] = useState([
+    { id: 1, adversario: "Ana Beatriz", status: "confirmado", resultado: null },
+    { id: 2, adversario: "Bruno Costa", status: "pendente_meu_aceite", resultado: null },
+    { id: 3, adversario: "Camila Rocha", status: "pendente_aceite_adversario", resultado: null },
+  ]);
+
+  const [adversarioSelecionado, setAdversarioSelecionado] = useState("");
 
   function marcarConfronto(evento) {
     evento.preventDefault();
-    const adversario = novoAdversario.trim();
-    if (!adversario) return;
+    if (!adversarioSelecionado) return;
 
     setConfrontos((atual) => [
       ...atual,
-      { id: Date.now(), adversario, status: "pendente", resultado: null },
+      {
+        id: Date.now(),
+        adversario: adversarioSelecionado,
+        status: "pendente_aceite_adversario",
+        resultado: null,
+      },
     ]);
-    setNovoAdversario("");
+    setAdversarioSelecionado("");
   }
 
-  function confirmarConfronto(id) {
+  function aceitarDesafio(id) {
     setConfrontos((atual) =>
       atual.map((c) => (c.id === id ? { ...c, status: "confirmado" } : c))
     );
@@ -50,54 +68,84 @@ export default function Confronto() {
   }
 
   return (
-    <main className="container py-4">
-      <h1 className="h3">Confrontos</h1>
-      <p>Marque, confirme ou registre resultados de confrontos.</p>
+    <main className="container py-4 d-flex flex-column align-items-center">
+      <section className="w-100" style={{ maxWidth: "720px" }}>
+        <header className="mb-4">
+          <h1 className="h3 text-center text-lg-start">Confrontos</h1>
+          <p className="text-body-secondary m-0">
+            Marque desafios com os seus matches. Ambas as partes precisam de aceitar para autorizar o confronto!
+          </p>
+        </header>
 
-      <form className="row g-2 mb-4" style={{ maxWidth: "480px" }} onSubmit={marcarConfronto}>
-        <div className="col-auto flex-grow-1">
-          <label htmlFor="adversario" className="form-label">Marcar confronto contra</label>
-          <input
-            type="text"
-            id="adversario"
-            className="form-control"
-            placeholder="Nome do adversário"
-            value={novoAdversario}
-            onChange={(evento) => setNovoAdversario(evento.target.value)}
-          />
-        </div>
-        <div className="col-auto d-flex align-items-end">
-          <button type="submit" className="btn btn-primary">Marcar</button>
-        </div>
-      </form>
+        {/* Formulário alimentado APENAS pelos ciclistas com quem deu MATCH */}
+        <article className="card shadow-sm p-3 mb-4">
+          <header className="mb-2">
+            <h2 className="h6 fw-bold m-0">Desafiar um Match</h2>
+          </header>
+          <form className="row g-2" onSubmit={marcarConfronto}>
+            <section className="col-auto flex-grow-1">
+              <label htmlFor="select-match" className="visually-hidden">
+                Escolha o parceiro de match
+              </label>
+              <select
+                id="select-match"
+                className="form-select"
+                value={adversarioSelecionado}
+                onChange={(e) => setAdversarioSelecionado(e.target.value)}
+                required
+              >
+                <option value="">Selecione um ciclista que deu match...</option>
+                {minhosMatches.map((match) => (
+                  <option key={match.id} value={match.nome}>
+                    {match.nome}
+                  </option>
+                ))}
+              </select>
+            </section>
+            <section className="col-auto">
+              <button type="submit" className="btn btn-primary w-100">
+                Enviar Desafio
+              </button>
+            </section>
+          </form>
+        </article>
 
-      <ul className="list-group">
-        {confrontos.map((confronto) => (
-          <li key={confronto.id} className="list-group-item">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div>
-                <strong>vs. {confronto.adversario}</strong>{" "}
-                <span className={`badge bg-${STATUS[confronto.status].cor}`}>
-                  {STATUS[confronto.status].rotulo}
-                </span>
-                {confronto.resultado && (
-                  <span className="ms-2 small text-body-secondary">
-                    Resultado: {confronto.resultado}
+        {/* Lista dos Confrontos */}
+        <section className="d-flex flex-column gap-3">
+          {confrontos.map((confronto) => (
+            <article
+              key={confronto.id}
+              className="card shadow-sm p-3 d-flex flex-row flex-wrap align-items-center justify-content-between gap-2"
+            >
+              <section>
+                <header>
+                  <h2 className="h6 fw-bold m-0 d-inline-block me-2">
+                    vs. {confronto.adversario}
+                  </h2>
+                  <span className={`badge bg-${STATUS[confronto.status].cor}`}>
+                    {STATUS[confronto.status].rotulo}
                   </span>
+                </header>
+                {confronto.resultado && (
+                  <p className="small text-body-secondary m-0 mt-1">
+                    Resultado: {confronto.resultado}
+                  </p>
                 )}
-              </div>
+              </section>
 
-              <div className="d-flex gap-2">
-                {confronto.status === "pendente" && (
+              <nav className="d-flex gap-2">
+                {/* Se o adversário me desafiou, exibe o botão para eu aceitar */}
+                {confronto.status === "pendente_meu_aceite" && (
                   <button
                     type="button"
-                    className="btn btn-outline-primary btn-sm"
-                    onClick={() => confirmarConfronto(confronto.id)}
+                    className="btn btn-success btn-sm"
+                    onClick={() => aceitarDesafio(confronto.id)}
                   >
-                    Confirmar Confronto
+                    Aceitar Confronto
                   </button>
                 )}
 
+                {/* Apenas quando AMBOS aceitam (status: confirmado) permite registar o resultado */}
                 {confronto.status === "confirmado" && (
                   <>
                     <button
@@ -105,14 +153,14 @@ export default function Confronto() {
                       className="btn btn-outline-primary btn-sm"
                       onClick={() => registrarResultado(confronto.id, "Vitória")}
                     >
-                      Registrar Vitória
+                      Vitória
                     </button>
                     <button
                       type="button"
                       className="btn btn-outline-secondary btn-sm"
                       onClick={() => registrarResultado(confronto.id, "Derrota")}
                     >
-                      Registrar Derrota
+                      Derrota
                     </button>
                   </>
                 )}
@@ -123,14 +171,14 @@ export default function Confronto() {
                     className="btn btn-outline-primary btn-sm"
                     onClick={() => confirmarEncerramento(confronto.id)}
                   >
-                    Confirmar Encerramento
+                    Encerrar
                   </button>
                 )}
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+              </nav>
+            </article>
+          ))}
+        </section>
+      </section>
     </main>
   );
 }

@@ -45,6 +45,12 @@ pra `changelog.md` com o registro da rodada. Regras e contexto do projeto:
   GPS ativo). Confirmar se ativar a localização do Windows + permitir no
   navegador resolve; se não, investigar `accuracy` vinda da API.
 
+- [ ] **Alinhar nome do menu/tela "Mapa" × "Cronômetro"** (rodada de
+  2026-09-29): o código agora exibe **"Cronômetro"** no menu e
+  **"Cronometrar percurso"** no `h1`, mas o `SOUL.md` e entradas antigas
+  do changelog ainda dizem "Mapa". Decidir o nome canônico e atualizar
+  os docs (ou o código).
+
 ## Nice to have
 
 - [ ] Modo escuro pro app inteiro (hoje só o overlay do menu é escuro —

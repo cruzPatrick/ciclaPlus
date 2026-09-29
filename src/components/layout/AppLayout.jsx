@@ -2,28 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import Footer from "./Footer.jsx";
 
-// Itens do menu como variável local do componente.
+// Itens do menu com o nome atualizado para "Cronômetro"
 const ITENS = [
   { to: "descoberta", texto: "Dar Match" },
   { to: "chat", texto: "Chat" },
   { to: "treino", texto: "Treino" },
-  { to: "mapa", texto: "Mapa" },
+  { to: "mapa", texto: "Cronômetro" },
   { to: "tempos", texto: "Gerenciar Tempos" },
   { to: "confronto", texto: "Confrontos" },
   { to: "consultoria", texto: "Consultoria" },
   { to: "ranking", texto: "Ranking" },
-  // Sempre por último: parte de baixo do menu hambúrguer / última aba mobile.
   { to: "perfil", texto: "Perfil" },
 ];
 
-// --------------------------------------------------------------------------
-// Desktop: só um ícone de hamburguer fixo no canto. Ao clicar, abre um
-// overlay escuro/fosco (backdrop-filter blur) com o menu em lista vertical.
-// --------------------------------------------------------------------------
 function DesktopMenu() {
   const [aberto, setAberto] = useState(false);
 
-  // Fecha com Esc, pra não prender o teclado dentro do overlay.
   useEffect(() => {
     function onKeyDown(evento) {
       if (evento.key === "Escape") setAberto(false);
@@ -33,7 +27,7 @@ function DesktopMenu() {
   }, []);
 
   return (
-    <div className="d-none d-lg-block">
+    <nav className="d-none d-lg-block">
       <button
         type="button"
         className={"cicla-hamburger" + (aberto ? " cicla-hamburger--aberto" : "")}
@@ -46,11 +40,11 @@ function DesktopMenu() {
         <span />
       </button>
 
-      <div
+      <section
         className={"cicla-overlay" + (aberto ? " cicla-overlay--aberto" : "")}
         onClick={() => setAberto(false)}
       >
-        <nav
+        <section
           className="cicla-overlay-panel"
           aria-hidden={!aberto}
           onClick={(evento) => evento.stopPropagation()}
@@ -71,16 +65,12 @@ function DesktopMenu() {
               </li>
             ))}
           </ul>
-        </nav>
-      </div>
-    </div>
+        </section>
+      </section>
+    </nav>
   );
 }
 
-// --------------------------------------------------------------------------
-// Mobile: barra de abas horizontal (rola pro lado), com uma linha embaixo
-// da aba atual que desliza com transição ao trocar de página.
-// --------------------------------------------------------------------------
 function MobileTabs() {
   const location = useLocation();
   const subrotaAtiva = location.pathname.split("/").filter(Boolean).pop();
@@ -99,8 +89,8 @@ function MobileTabs() {
   }, [subrotaAtiva]);
 
   return (
-    <div className="d-lg-none cicla-tabs-wrapper bg-primary">
-      <div className="cicla-tabs-scroll">
+    <nav className="d-lg-none cicla-tabs-wrapper bg-primary">
+      <section className="cicla-tabs-scroll">
         {ITENS.map((item) => (
           <NavLink
             key={item.to}
@@ -119,8 +109,8 @@ function MobileTabs() {
           className="cicla-tab-indicator"
           style={{ left: indicador.left, width: indicador.width }}
         />
-      </div>
-    </div>
+      </section>
+    </nav>
   );
 }
 
