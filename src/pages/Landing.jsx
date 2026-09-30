@@ -51,14 +51,14 @@ export default function Landing() {
       <main className="container py-5">
         <div className="row g-4">
           {destaques.map((destaque) => (
-            <div className="col-md-4" key={destaque.titulo}>
-              <div className="card h-100 border-0 shadow-sm">
-                <div className="card-body">
+            <section className="col-md-4" key={destaque.titulo}>
+              <article className="card h-100 border-0 shadow-sm">
+                <section className="card-body">
                   <h2 className="h5 text-primary">{destaque.titulo}</h2>
                   <p className="card-text">{destaque.texto}</p>
-                </div>
-              </div>
-            </div>
+                </section>
+              </article>
+            </section>
           ))}
         </div>
       </main>

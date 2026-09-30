@@ -902,3 +902,69 @@ desafiados e o confronto tem estados de status.*
 - `npm.cmd run build`: **ok** (`EXIT=0`; `dist/index.html` e
   `dist/404.html` gerados; só os avisos esperados — deprecation do Sass
   e chunk > 500 kB do Leaflet).
+
+---
+
+## 2026-09-30 — HTML semântico varrido pelo projeto: div → article/section/figure
+
+### Contexto da rodada
+
+A pedido do Patrick: **usar HTML semântico em todo o projeto**, reabrir
+todos os documentos (`SOUL.md`, `backlog.md`, `changelog.md`, `README.md`)
+e atacar os arquivos com **muita `<div>`**. Levantamento inicial: **27
+`<div>` em 6 arquivos** — Landing (7), Treino (8), Chat (6), Perfil (3),
+Cadastro (2), AppLayout (1). As demais telas já estavam semânticas
+(login, Dar Match, Cronômetro/Mapa, Tempos, Confrontos — rodada de
+2026-09-29), assim como `Header.jsx` e `Footer.jsx`.
+
+### Regra de conversão aplicada (agora regra 10 do `SOUL.md`)
+
+| Vira semântico | Fica `<div>` (layout puro) |
+|---|---|
+| `card` → `<article>` | page wrapper `d-flex flex-column min-vh-100` |
+| `card-body` / bloco de conteúdo → `<section>` | `container`, `row` |
+| `col*` que aloja um bloco de conteúdo → `<section>` | wrappers de breakpoint (`d-lg-none`, `d-none d-lg-block`) |
+| campos de formulário (label+input) → `<section>` | agrupamentos visuais sem conteúdo próprio |
+| banner/foto → `<figure>` (com `m-0`, padrão do `auth-card`) | |
+| avisos/erros → `<aside>` (já era, mantido) | |
+
+### Mudança por arquivo
+
+| Arquivo | Antes (divs) | Depois | O que mudou |
+|---|---|---|---|
+| `src/pages/Landing.jsx` | 7 | 5 | destaque: `col-md-4` → `<section>`, `card` → `<article>`, `card-body` → `<section>` |
+| `src/pages/app/Treino.jsx` | 8 | 1 | `col-lg-4` (form) e `col-lg-8` (Marcados) → `<section>`; 5 wrappers de campo → `<section>` |
+| `src/pages/app/Chat.jsx` | 6 | 3 | caixa de mensagens → `<section>`; `col-lg-4` (lista) e `col-lg-8` (thread) → `<section>` |
+| `src/pages/app/Perfil.jsx` | 3 | 0 | `perfil-card` → `<article>`, banner → `<figure class="perfil-banner m-0">`, conteúdo → `<section>` |
+| `src/pages/Cadastro.jsx` | 2 | 1 | wrapper de campo do form → `<section>` |
+| `src/components/layout/AppLayout.jsx` | 1 | 1 | só o page wrapper — mantido (layout puro) |
+
+**Saldo: 27 → 11 `<div>`** (11 de abertura, 11 de fechamento — conferido
+com grep), todas em puro layout Bootstrap. Nenhuma classe CSS mudou —
+`section`/`article`/`figure` recebem as mesmas classes do Bootstrap, então
+o visual fica idêntico.
+
+**Também atualizado nesta rodada:**
+
+- `mudancas/SOUL.md` — **regra 10** (HTML semântico) adicionada às regras
+  invioláveis, codificando o pedido desta rodada.
+- `mudancas/backlog.md` — item "Telas ainda rascunho" agora só cita
+  `Consultoria` (`Tempos` ficou funcional na rodada de 2026-09-29;
+  conferido lendo `Consultoria.jsx`, que continua estático).
+
+**Como verificar:**
+
+- F12 em qualquer página: `main`, `header`, `nav`, `section`, `article`,
+  `figure`, `footer` no lugar das divs de conteúdo; `<div>` restante só
+  em wrapper/grid.
+- `/` (Landing): os 3 cards de destaque continuam idênticos visualmente.
+- `/app/perfil`: banner continua no topo do card (figure com `m-0` não
+  ganhou a margem padrão de `figure`).
+- `/app/treino` e `/app/chat`: forms, tabela e conversas inalterados.
+
+### Verificação feita nesta rodada
+
+- `npm.cmd run lint` (oxlint): **0 warnings / 0 errors**.
+- `npm.cmd run build`: **ok** (`EXIT=0`; `dist/index.html` e
+  `dist/404.html` gerados; só os avisos esperados — deprecation do Sass e
+  chunk > 500 kB do Leaflet).

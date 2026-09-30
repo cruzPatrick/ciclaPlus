@@ -46,6 +46,12 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
    `backlog.md`.
 9. **Avisos do Sass** (deprecation do Bootstrap) e o **aviso de chunk >500 kB**
    (Leaflet) são esperados — não são erros.
+10. **HTML semântico em todo o projeto:** usar `<main>`, `<header>`,
+    `<nav>`, `<section>`, `<article>`, `<aside>`, `<figure>` e `<footer>`
+    no lugar de `<div>`; `<div>` só permanece em layout puro do Bootstrap
+    (page wrapper `min-vh-100`, `container`, `row`, wrappers de breakpoint
+    `d-lg-none`/`d-none d-lg-block`). Nenhum `alert()`/`.alert` — avisos
+    são `<aside>`.
 
 ## Paleta
 

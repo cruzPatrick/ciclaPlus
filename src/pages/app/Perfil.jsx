@@ -8,11 +8,11 @@ export default function Perfil() {
 
   return (
     <main className="container py-4">
-      <div className="perfil-card bg-white">
+      <article className="perfil-card bg-white">
         {/* Mesma foto do topo do card de login. */}
-        <div className="perfil-banner" />
+        <figure className="perfil-banner m-0" />
 
-        <div className="p-3">
+        <section className="p-3">
           <h1 className="h4 text-center mb-1">Perfil</h1>
           <p className="small text-body-secondary text-center mb-3">
             {conta.email}
@@ -36,8 +36,8 @@ export default function Perfil() {
             Sair
             <span className="material-icons align-middle ms-1">logout</span>
           </button>
-        </div>
-      </div>
+        </section>
+      </article>
     </main>
   );
 }

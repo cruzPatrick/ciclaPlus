@@ -29,7 +29,7 @@ function ItemConversa({ conversa, ativa, onSelecionar }) {
 function ThreadConversa({ conversa, rascunho, onMudarRascunho, onEnviar }) {
   return (
     <>
-      <div className="border rounded p-3 mb-2" style={{ minHeight: "220px" }}>
+      <section className="border rounded p-3 mb-2" style={{ minHeight: "220px" }}>
         {conversa.mensagens.map((mensagem, indice) => (
           <p key={indice} className={"mb-2 " + (mensagem.autor === "Você" ? "text-end" : "")}>
             <span
@@ -42,7 +42,7 @@ function ThreadConversa({ conversa, rascunho, onMudarRascunho, onEnviar }) {
             </span>
           </p>
         ))}
-      </div>
+      </section>
 
       <form className="d-flex gap-2" onSubmit={onEnviar}>
         <input
@@ -149,7 +149,7 @@ export default function Chat() {
       <div className="d-none d-lg-block">
         <h1 className="h3">Chat</h1>
         <div className="row g-3">
-          <div className="col-lg-4">
+          <section className="col-lg-4">
             <ul className="list-group">
               {conversas.map((conversa) => (
                 <ItemConversa
@@ -160,15 +160,15 @@ export default function Chat() {
                 />
               ))}
             </ul>
-          </div>
-          <div className="col-lg-8">
+          </section>
+          <section className="col-lg-8">
             <ThreadConversa
               conversa={conversaAtiva}
               rascunho={rascunho}
               onMudarRascunho={setRascunho}
               onEnviar={enviarMensagem}
             />
-          </div>
+          </section>
         </div>
       </div>
     </main>

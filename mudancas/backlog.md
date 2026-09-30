@@ -8,8 +8,9 @@ pra `changelog.md` com o registro da rodada. Regras e contexto do projeto:
 
 ## Funcionalidades / product
 
-- [ ] **Telas ainda rascunho (sem interação real):** `Tempos`,
-  `Consultoria`.
+- [ ] **Telas ainda rascunho (sem interação real):** `Consultoria`.
+  (`Tempos` saiu do rascunho na rodada de 2026-09-29 — busca + modo de
+  edição/exclusão.)
 - [ ] **Modelar o percurso/ciclovia como entidade de verdade** (coordenadas
   de início/fim, ou referência ao trajeto gravado no Mapa) — hoje
   "Ciclovia da Orla" é só uma string solta no array do Ranking. Necessário

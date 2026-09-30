@@ -72,43 +72,43 @@ export default function Treino() {
       </ul>
 
       <div className="row g-4">
-        <div className="col-lg-4">
+        <section className="col-lg-4">
           {tipo === "individual" ? (
             <form onSubmit={marcarTreino}>
-              <div className="mb-2">
+              <section className="mb-2">
                 <label htmlFor="data" className="form-label">Data</label>
                 <input type="date" id="data" name="data" className="form-control" required />
-              </div>
-              <div className="mb-3">
+              </section>
+              <section className="mb-3">
                 <label htmlFor="hora" className="form-label">Hora</label>
                 <input type="time" id="hora" name="hora" className="form-control" required />
-              </div>
+              </section>
               <button type="submit" className="btn btn-primary">Agendar</button>
             </form>
           ) : (
             <form onSubmit={marcarTreino}>
-              <div className="mb-2">
+              <section className="mb-2">
                 <label htmlFor="equipe" className="form-label">Selecione a equipe</label>
                 <select id="equipe" name="equipe" className="form-select">
                   {equipes.map((equipe) => (
                     <option key={equipe}>{equipe}</option>
                   ))}
                 </select>
-              </div>
-              <div className="mb-2">
+              </section>
+              <section className="mb-2">
                 <label htmlFor="data-equipe" className="form-label">Data</label>
-                <input type="date" id="data-equipe" name="data" className="form-control" required />
-              </div>
-              <div className="mb-3">
+                <input type="date" id="data-equipe" name="data-equipe" className="form-control" required />
+              </section>
+              <section className="mb-3">
                 <label htmlFor="hora-equipe" className="form-label">Hora</label>
-                <input type="time" id="hora-equipe" name="hora" className="form-control" required />
-              </div>
+                <input type="time" id="hora-equipe" name="hora-equipe" className="form-control" required />
+              </section>
               <button type="submit" className="btn btn-primary">Agendar</button>
             </form>
           )}
-        </div>
+        </section>
 
-        <div className="col-lg-8">
+        <section className="col-lg-8">
           <h2 className="h5 mb-3">Marcados</h2>
           <table className="table table-striped">
             <thead>
@@ -138,7 +138,7 @@ export default function Treino() {
               ))}
             </tbody>
           </table>
-        </div>
+        </section>
       </div>
     </main>
   );

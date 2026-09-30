@@ -28,7 +28,7 @@ export default function Cadastro() {
       <main className="container py-4" style={{ maxWidth: "480px" }}>
         <form onSubmit={handleSubmit}>
           {campos.map((campo) => (
-            <div className="mb-3" key={campo.id}>
+            <section className="mb-3" key={campo.id}>
               <label htmlFor={campo.id} className="form-label">
                 {campo.label}
               </label>
@@ -40,7 +40,7 @@ export default function Cadastro() {
                 placeholder={campo.placeholder}
                 required
               />
-            </div>
+            </section>
           ))}
 
           <button type="submit" className="btn btn-primary w-100">
