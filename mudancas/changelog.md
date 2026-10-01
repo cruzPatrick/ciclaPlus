@@ -968,3 +968,21 @@ o visual fica idêntico.
 - `npm.cmd run build`: **ok** (`EXIT=0`; `dist/index.html` e
   `dist/404.html` gerados; só os avisos esperados — deprecation do Sass e
   chunk > 500 kB do Leaflet).
+
+
+---
+
+## 2026-10-01 — Business Case e Termo de Abertura em Markdown
+
+- Criada a pasta `docs` com `business-case.md` e `termo-de-abertura.md`, convertidos e revisados a partir dos PDFs da gerência.
+- Organizados títulos, tabelas, listas e links entre os documentos para leitura no GitHub.
+- Preservados os 15 casos de uso da matriz, os dados locais e usuários fictícios, a ausência de backend e os prazos de 05/10/2026 (documentos) e 06/10/2026 (frontend).
+- Explicitadas a pendência de confirmação de custos e a ausência de aprovação registrada; incluído registro de validação no Termo de Abertura.
+- Mantida a monetização com Boost como hipótese futura, sem cobrança nesta entrega e sem afirmar retorno financeiro comprovado.
+- Nenhuma alteração no código da aplicação ou publicação do site.
+
+### Verificação
+
+- Markdown renderizado para inspeção visual; tabelas e links relativos conferidos, sem transbordamento horizontal na prévia.
+- `npm.cmd run lint`: concluído sem erros.
+- `npm.cmd run build`: concluído com os avisos já conhecidos de Sass e tamanho do bundle.
