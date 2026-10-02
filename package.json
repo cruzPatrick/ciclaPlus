@@ -7,15 +7,21 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mock": "json-server --watch db.json --port 3001"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
+    "@tanstack/react-query": "^5.104.0",
     "bootstrap": "^5.3.8",
+    "json-server": "^1.0.0-beta.15",
     "leaflet": "^1.9.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-hook-form": "^7.89.0",
     "react-router-dom": "^7.18.3",
-    "sass": "^1.104.1"
+    "sass": "^1.104.1",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

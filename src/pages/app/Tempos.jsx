@@ -1,13 +1,13 @@
 import { useState } from "react";
+import { useTempos, useExcluirTempo } from "../../hooks/useCiclaData.js";
 
 export default function Tempos() {
-  // Lista de tempos/trajetos em memória local
-  const [trajetos, setTrajetos] = useState([
-    { id: 1, nome: "Ciclovia da Orla", tempo: "00:18:42", distanciaKm: 8.5 },
-    { id: 2, nome: "Volta do Parque Central", tempo: "00:12:05", distanciaKm: 5.2 },
-    { id: 3, nome: "Trilha da Montanha", tempo: "00:45:30", distanciaKm: 14.1 },
-    { id: 4, nome: "Percurso Urbano Centro", tempo: "00:22:15", distanciaKm: 9.0 },
-  ]);
+  // Os tempos vêm do json-server — essa tela só lê e exclui. Adicionar um
+  // tempo novo só é possível percorrendo um percurso de verdade no
+  // Cronômetro (Mapa.jsx); não existe (de propósito) um formulário aqui
+  // pra digitar um tempo manualmente.
+  const { data: trajetos = [], isLoading, isError } = useTempos();
+  const excluirMutation = useExcluirTempo();
 
   const [pesquisa, setPesquisa] = useState("");
   const [modoEdicao, setModoEdicao] = useState(false);
@@ -17,8 +17,24 @@ export default function Tempos() {
     t.nome.toLowerCase().includes(pesquisa.toLowerCase())
   );
 
-  function excluirTrajeto(id) {
-    setTrajetos((atual) => atual.filter((item) => item.id !== id));
+  if (isLoading) {
+    return (
+      <main className="container py-4">
+        <h1 className="h3">Gerenciar Tempo</h1>
+        <p className="text-body-secondary">Carregando tempos registrados...</p>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="container py-4">
+        <h1 className="h3">Gerenciar Tempo</h1>
+        <aside className="bg-light border border-danger text-danger rounded p-2 small">
+          Não foi possível carregar os tempos. O json-server está rodando? (npm run mock)
+        </aside>
+      </main>
+    );
   }
 
   return (
@@ -94,7 +110,7 @@ export default function Tempos() {
                       type="button"
                       className="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center"
                       aria-label={`Excluir trajeto ${item.nome}`}
-                      onClick={() => excluirTrajeto(item.id)}
+                      onClick={() => excluirMutation.mutate(item.id)}
                     >
                       <span className="material-icons" style={{ fontSize: "18px" }}>
                         delete

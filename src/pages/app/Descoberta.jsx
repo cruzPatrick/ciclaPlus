@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useCandidatos, useAvaliarCandidato } from "../../hooks/useCiclaData.js";
 
 function CardCandidato({ candidato, onAvaliar, isMobile }) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -125,27 +126,39 @@ function CardCandidato({ candidato, onAvaliar, isMobile }) {
 }
 
 export default function Descoberta() {
-  const [candidatos, setCandidatos] = useState([
-    { id: 1, nome: "Ana Beatriz", distanciaKm: 3.2, tipo: "Estrada", status: "pendente" },
-    { id: 2, nome: "Bruno Costa", distanciaKm: 5.8, tipo: "Mountain bike", status: "pendente" },
-    { id: 3, nome: "Camila Rocha", distanciaKm: 1.4, tipo: "Urbano", status: "pendente" },
-  ]);
+  const { data: candidatos = [], isLoading, isError } = useCandidatos();
+  const avaliarMutation = useAvaliarCandidato();
 
   const [mostrarInstrucao, setMostrarInstrucao] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMostrarInstrucao(false);
-    }, 1000);
-
+    if (candidatos.length === 0) return;
+    const timer = setTimeout(() => setMostrarInstrucao(false), 1000);
     return () => clearTimeout(timer);
-  }, []);
-
-  const pendentes = candidatos.filter((c) => c.status === "pendente");
+  }, [candidatos.length]);
 
   function avaliar(id, status) {
-    setCandidatos((atual) =>
-      atual.map((candidato) => (candidato.id === id ? { ...candidato, status } : candidato))
+    const candidato = candidatos.find((c) => c.id === id);
+    if (candidato) avaliarMutation.mutate({ candidato, status });
+  }
+
+  if (isLoading) {
+    return (
+      <main className="container py-4">
+        <h1 className="h3">Dar Match</h1>
+        <p className="text-body-secondary">Carregando ciclistas por perto...</p>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="container py-4">
+        <h1 className="h3">Dar Match</h1>
+        <aside className="bg-light border border-danger text-danger rounded p-2 small">
+          Não foi possível carregar os candidatos. O json-server está rodando? (npm run mock)
+        </aside>
+      </main>
     );
   }
 
@@ -156,13 +169,13 @@ export default function Descoberta() {
         <p>Encontre outros ciclistas e dê Match!</p>
       </header>
 
-      {pendentes.length === 0 ? (
+      {candidatos.length === 0 ? (
         <aside className="text-body-secondary">Sem novos ciclistas por perto no momento.</aside>
       ) : (
         <section>
           <section className="d-lg-none mx-auto" style={{ maxWidth: "300px" }}>
-            <CardCandidato candidato={pendentes[0]} onAvaliar={avaliar} isMobile={true} />
-            
+            <CardCandidato candidato={candidatos[0]} onAvaliar={avaliar} isMobile={true} />
+
             {mostrarInstrucao && (
               <aside className="text-center text-body-secondary small mt-3">
                 👈 Arraste para passar | Arraste para dar match 👉
@@ -171,7 +184,7 @@ export default function Descoberta() {
           </section>
 
           <section className="d-none d-lg-flex flex-wrap gap-3">
-            {pendentes.map((candidato) => (
+            {candidatos.map((candidato) => (
               <section key={candidato.id} style={{ width: "220px" }}>
                 <CardCandidato candidato={candidato} onAvaliar={avaliar} isMobile={false} />
               </section>

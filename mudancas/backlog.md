@@ -8,31 +8,36 @@ pra `changelog.md` com o registro da rodada. Regras e contexto do projeto:
 
 ## Funcionalidades / product
 
-- [ ] **Telas ainda rascunho (sem interação real):** `Consultoria`.
-  (`Tempos` saiu do rascunho na rodada de 2026-09-29 — busca + modo de
-  edição/exclusão.)
 - [ ] **Modelar o percurso/ciclovia como entidade de verdade** (coordenadas
   de início/fim, ou referência ao trajeto gravado no Mapa) — hoje
-  "Ciclovia da Orla" é só uma string solta no array do Ranking. Necessário
-  pra validar Confronto contra o trajeto de verdade.
-- [ ] **Conectar os três estados locais hoje independentes:** resultado do
-  cronômetro no Mapa (tempo + trajeto) → Ranking por percurso → fluxo de
-  Confronto.
-- [ ] **CRUD de Conta na página `/app/perfil`** — os botões "Editar conta" e
-  "Mudar perfil" existem mas ainda não fazem nada (ver entrada de
-  2026-09-23).
+  "Ciclovia da Orla" é só uma string repetida em `tempos` e em
+  `melhoresTemposPorPercurso` no `db.json`, sem ligação real entre as
+  duas coleções. Necessário pra validar Confronto contra o trajeto de
+  verdade e pro Ranking refletir os tempos reais registrados no
+  Cronômetro (hoje o Ranking é dado semeado à parte).
 - [ ] **CRUD de Equipe** (Manter Equipe completo — lacuna da Matriz CRUD).
-- [ ] **Consultar/Cancelar Confronto** (lacuna da Matriz CRUD).
-- [ ] **Excluir Ciclista** (lacuna da Matriz CRUD).
+  `db.json` já tem a coleção `equipes` (usada no formulário de Treino em
+  Equipe), mas só leitura — faltam criar/editar/excluir.
+- [ ] **Consultar/Cancelar Confronto** (lacuna da Matriz CRUD) — hoje
+  Confronto cobre Criar/Aceitar/Registrar resultado/Encerrar, mas não
+  tem uma tela de consulta dedicada nem cancelamento.
+- [ ] **Excluir Ciclista** (lacuna da Matriz CRUD) — não existe fluxo de
+  exclusão de conta.
 - [ ] **Interfaces diferenciadas por perfil** (Ciclista × Equipe) nas
   funcionalidades compartilhadas: Marcar Treino em Equipe, Cronometrar
-  Desempenho, Manter Tempo, Marcar Consultoria, Conferir Ranking.
+  Desempenho, Manter Tempo, Marcar Consultoria, Conferir Ranking. A troca
+  de perfil em `/app/perfil` já persiste no `db.json` (rodada de
+  2026-10-01), mas nenhuma tela ainda muda de comportamento/layout com
+  base nisso — fica tudo igual pros dois perfis.
 
 ## Persistência / backend
 
-- [ ] **Persistência de cadastro/login** (localStorage; API real numa etapa
-  futura). Hoje: login só valida `teste@ciclaplus.com` / `123456` e cadastro
-  não salva nada.
+Resolvido na rodada de 2026-10-01: ver `changelog.md`. Dados agora vêm
+de `db.json` via json-server (`npm run mock`), consumidos com Tanstack
+Query; login/cadastro validam contra o backend mockado; sessão
+(`usuarioId`) fica em `localStorage`. Escopo por conta (só `matches` em
+2026-10-02, estendido no mesmo dia a `candidatos`, `treinos`, `tempos`,
+`confrontos` e `consultorias`) também resolvido — ver `changelog.md`.
 
 ## Infra / deploy
 

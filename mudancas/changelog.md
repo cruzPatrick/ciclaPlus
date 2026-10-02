@@ -969,20 +969,324 @@ o visual fica idêntico.
   `dist/404.html` gerados; só os avisos esperados — deprecation do Sass e
   chunk > 500 kB do Leaflet).
 
+---
+
+## 2026-09-30 — Chat restrito a matches reais, cronômetro sem resetar, tempo só via percurso rastreado
+
+### Contexto da rodada
+
+A pedido do Patrick, três correções de consistência de dados — até aqui,
+"match", "conversa" e "tempo registrado" eram listas independentes, cada
+tela com a sua própria simulação, sem nenhuma ligação real entre elas.
 
 ---
 
-## 2026-10-01 — Business Case e Termo de Abertura em Markdown
+### Problema 1 — Chat mostrava gente com quem nunca se deu match
 
-- Criada a pasta `docs` com `business-case.md` e `termo-de-abertura.md`, convertidos e revisados a partir dos PDFs da gerência.
-- Organizados títulos, tabelas, listas e links entre os documentos para leitura no GitHub.
-- Preservados os 15 casos de uso da matriz, os dados locais e usuários fictícios, a ausência de backend e os prazos de 05/10/2026 (documentos) e 06/10/2026 (frontend).
-- Explicitadas a pendência de confirmação de custos e a ausência de aprovação registrada; incluído registro de validação no Termo de Abertura.
-- Mantida a monetização com Boost como hipótese futura, sem cobrança nesta entrega e sem afirmar retorno financeiro comprovado.
-- Nenhuma alteração no código da aplicação ou publicação do site.
+**Causa raiz:** `Chat.jsx` guardava sua própria lista fixa de conversas
+(Ana Beatriz, Bruno Costa), sem nenhuma relação com o `status` dos
+candidatos em `Descoberta.jsx`. Dar ou não match em "Dar Match" não
+mudava em nada quem aparecia no Chat.
 
-### Verificação
+**Solução — state de matches levantado pro `AppLayout`:**
 
-- Markdown renderizado para inspeção visual; tabelas e links relativos conferidos, sem transbordamento horizontal na prévia.
-- `npm.cmd run lint`: concluído sem erros.
-- `npm.cmd run build`: concluído com os avisos já conhecidos de Sass e tamanho do bundle.
+1. `AppLayout` passou a guardar `matches` (lista local, em memória — regra
+   1 do `SOUL.md` continua valendo) e distribuir via `<Outlet context={{...}}/>`
+   pras rotas filhas.
+2. `Descoberta.jsx` chama `adicionarMatch` sempre que `avaliar(id, "match")`
+   acontece — é o único lugar do app que grava um match novo.
+3. `Chat.jsx` deixou de ter lista própria: as conversas agora são
+   derivadas de `matches` (mensagens ficam num dicionário local por id,
+   `mensagensPorMatch`). Sem nenhum match, a tela mostra só um aviso —
+   não existe mais como abrir o Chat sem ter dado match antes.
+4. Ana Beatriz e Bruno Costa nascem com `status: "match"` em `Descoberta`
+   (preserva o histórico de conversa que já existia); Camila Rocha
+   continua pendente, disponível pra demonstrar o match acontecendo ao
+   vivo e aparecendo no Chat na hora.
+
+**Arquivos alterados:** `src/components/layout/AppLayout.jsx`,
+`src/pages/app/Descoberta.jsx`, `src/pages/app/Chat.jsx`.
+
+**Como verificar:** abrir `/app/chat` — só Ana e Bruno aparecem. Ir em
+`/app/descoberta`, dar match em Camila Rocha, voltar pro Chat — Camila
+aparece na lista, com histórico vazio, pronta pra primeira mensagem.
+
+---
+
+### Problema 2 — Cronômetro zerava tempo/distância/trajeto ao retomar
+
+**Causa raiz:** `iniciarCronometro()` fazia `setTempoMs(0)` e
+`setDistanciaM(0)` incondicionalmente toda vez que era chamada — inclusive
+ao apertar play de novo depois de um stop no meio do percurso, perdendo
+todo o progresso. A trilha desenhada no mapa também reiniciava do zero a
+cada novo play.
+
+**Solução:**
+
+1. `inicioRef.current = Date.now() - tempoMs` em vez de `Date.now()` — o
+   cronômetro retoma a contagem de onde parou, não zera.
+2. O ponto inicial da trilha (`trajetoRef`) só é definido quando ela está
+   vazia (primeira vez rodando); ao retomar, a linha já desenhada
+   continua a partir de onde parou.
+3. `pararCronometro()` continua só pausando (já não zerava nada — esse
+   comportamento foi mantido).
+4. O reset de `tempoMs`/`distanciaM`/`trajetoRef` passou a acontecer só
+   dentro da nova `finalizarCronometro()` (ver Problema 3), depois que o
+   tempo já foi salvo.
+
+**Arquivo alterado:** `src/pages/app/Mapa.jsx`.
+
+**Como verificar:** em `/app/mapa`, iniciar o cronômetro, esperar alguns
+segundos, parar, esperar, apertar play de novo — o timer continua
+contando de onde parou, não volta pra `00:00`.
+
+---
+
+### Problema 3 — Nada impedia um tempo de "existir" sem vir do mapa
+
+**Causa raiz:** `Tempos.jsx` guardava sua própria lista local de
+trajetos — nada no código validava que um tempo realmente veio de um
+percurso rastreado; era só dado simulado solto no componente.
+
+**Solução:**
+
+1. `tempos` também subiu pro `AppLayout` (junto de `matches`), com
+   `adicionarTempo` e `excluirTempo` expostos pelo contexto do `Outlet`.
+2. `Tempos.jsx` deixou de ter state próprio: lê `tempos` e usa
+   `excluirTempo` do contexto. Não existe (nunca existiu, mas agora é
+   estrutural) nenhum formulário pra adicionar um tempo manualmente ali.
+3. `finalizarCronometro()`, nova função em `Mapa.jsx`, é o **único** lugar
+   do app que chama `adicionarTempo` — só fica disponível
+   (botão "Finalizar e salvar") quando `tempoMs > 0`, e só fica habilitada
+   quando `distanciaM > 0`: exige ter realmente percorrido alguma
+   distância rastreada pelo GPS, não só deixado o relógio correr parado.
+   Com `tempoMs > 0` e `distanciaM === 0`, aparece um aviso em `<aside>`
+   explicando o motivo.
+
+**Arquivos alterados:** `src/components/layout/AppLayout.jsx`,
+`src/pages/app/Mapa.jsx`, `src/pages/app/Tempos.jsx`.
+
+**Como verificar:** em `/app/mapa`, iniciar o cronômetro sem se mover —
+o botão de finalizar aparece desabilitado com o aviso de distância. Com
+localização ativa e alguma distância percorrida, finalizar salva o tempo
+e ele aparece em `/app/tempos` (sem nenhum jeito de adicionar um tempo
+por lá diretamente).
+
+---
+
+### Observações desta rodada
+
+- `Confronto.jsx` **ainda** mantém sua própria lista local de "matches"
+  (`minhosMatches`), independente da lista real levantada nesta rodada —
+  não foi tocado aqui por estar fora do pedido, mas é a mesma
+  inconsistência do Problema 1, só que numa tela diferente. Registrado no
+  `backlog.md`.
+- Nome do trajeto salvo pelo Cronômetro é gerado automaticamente
+  (`Percurso <data>`) — não existe campo pra nomear o percurso ainda.
+
+### Verificação feita nesta rodada
+
+- `npm run lint` (oxlint): **0 warnings / 0 errors**.
+- `npm run build`: **ok** (`EXIT=0`; só o aviso esperado de chunk > 500 kB
+  do Leaflet).
+
+---
+
+## 2026-10-01 — Backend mockado (json-server), Tanstack Query, react-hook-form + zod em todo o app
+
+### Contexto da rodada
+
+O professor pediu, pra validar a entrega, que o sistema cumprisse:
+escopo prometido implementado e integrado com backend mockado
+(json-server); tecnologias de sala (ES6, React, react-hook-form, zod,
+Tanstack Query, responsividade via framework de mercado — não media
+query/CSS gerado por IA); software realmente usável; código limpo;
+dados iniciais pro json-server. Essa rodada reestrutura o app pra
+atender isso.
+
+### O que mudou, por camada
+
+**Backend mockado:** `db.json` na raiz, com as 11 coleções do domínio
+(`usuarios`, `candidatos`, `matches`, `mensagens`, `treinos`, `equipes`,
+`tempos`, `confrontos`, `consultorias`, `ranking`,
+`melhoresTemposPorPercurso`). `npm run mock` sobe o json-server na porta
+3001.
+
+**Camada de API:** `src/api/client.js` (fetch wrapper com tratamento de
+erro) + `src/api/ciclaApi.js` (uma função por operação, agrupada por
+recurso). Nenhum componente chama `fetch` diretamente.
+
+**Tanstack Query:** `QueryClientProvider` em `main.jsx`; todos os hooks
+de dados em `src/hooks/useCiclaData.js` (`useQuery`/`useMutation`, com
+`invalidateQueries` nas mutations pra manter o cache coerente). O state
+que tinha sido levantado pro `AppLayout` na rodada anterior (matches,
+tempos) saiu de lá — Tanstack Query já é o mecanismo de estado
+compartilhado entre páginas, não precisa mais de Outlet context.
+`AppLayout` ganhou uma guarda de rota mínima: sem sessão
+(`usuarioLogadoId()`), redireciona pra `/login`.
+
+**react-hook-form + zod:** schema de validação em todo formulário da
+aplicação — Login, Cadastro, Chat (mensagem), Treino (individual e
+equipe), Confronto (desafiar um match), Consultoria (solicitar) e
+Perfil (editar conta).
+
+**Telas que eram rascunho/inertes viraram funcionais:**
+- `Consultoria.jsx` — tinha zero interação; agora lista solicitações e
+  tem formulário de solicitação de verdade, persistido no `db.json`.
+- `Perfil.jsx` — "Editar conta" e "Mudar perfil" eram botões que não
+  faziam nada; agora editam/alternam de verdade via `PATCH /usuarios/:id`.
+  "Sair" agora limpa a sessão e navega pra `/login`.
+- `Login.jsx` — antes só aceitava um usuário fixo hard-coded; agora
+  autentica contra o `db.json`.
+- `Cadastro.jsx` — antes não salvava nada; agora cria o usuário via
+  `POST /usuarios` (com checagem de e-mail duplicado).
+
+**Correção de bug do json-server 1.x beta (achado durante o teste
+manual desta rodada):** o motor de filtro por querystring do
+`json-server@1.0.0-beta.15` se mostrou instável — `?email=...` sozinho
+funciona, mas `?email=...&senha=...` combinado, ou `?senha=...`/`?id=...`
+sozinhos, retornavam `[]` mesmo com o registro existindo. Pra não
+depender de um comportamento de beta, `usuariosApi.autenticar`,
+`usuariosApi.emailJaExiste` e `mensagensApi.listarPorMatch` passaram a
+buscar a coleção inteira e filtrar no JavaScript. Com o volume de dados
+mockado isso não tem custo de performance perceptível.
+
+### Arquivos novos
+`db.json`, `src/api/client.js`, `src/api/ciclaApi.js`,
+`src/api/sessao.js`, `src/hooks/useCiclaData.js`.
+
+### Arquivos reescritos
+`src/main.jsx`, `src/components/layout/AppLayout.jsx`, `src/pages/Login.jsx`,
+`src/pages/Cadastro.jsx`, `src/pages/app/Descoberta.jsx`,
+`src/pages/app/Chat.jsx`, `src/pages/app/Mapa.jsx`, `src/pages/app/Tempos.jsx`,
+`src/pages/app/Confronto.jsx`, `src/pages/app/Treino.jsx`,
+`src/pages/app/Ranking.jsx`, `src/pages/app/Consultoria.jsx`,
+`src/pages/app/Perfil.jsx`, `package.json` (script `mock`).
+
+### Pendências que ficam — justificativa (pedido do professor)
+
+Não dá pra fechar nesta rodada, documentado em vez de simulado:
+- **Interfaces diferenciadas por perfil** (Ciclista × Equipe): a troca de
+  perfil já persiste de verdade, mas nenhuma tela muda de comportamento
+  com base nela ainda — exige revisar cada tela compartilhada uma a uma.
+- **CRUD de Equipe, Consultar/Cancelar Confronto, Excluir Ciclista**
+  (lacunas originais da Matriz CRUD): ainda não implementados — ver
+  `backlog.md` para detalhe de cada um.
+- **Ranking não deriva dos tempos reais do Cronômetro** — `ranking` e
+  `melhoresTemposPorPercurso` continuam dados semeados à parte de
+  `tempos`, porque o percurso ainda não é uma entidade de verdade (mesma
+  pendência já registrada antes desta rodada).
+
+### Como verificar
+
+1. `npm install` (primeira vez) — instala `@tanstack/react-query`,
+   `react-hook-form`, `zod`, `@hookform/resolvers` e `json-server`, novos
+   nesta rodada.
+2. `npm run mock` num terminal (json-server na porta 3001).
+3. `npm run dev` em outro terminal.
+4. Login com `teste@ciclaplus.com` / `123456` — testado ponta a ponta
+   nesta rodada via script Node simulando as chamadas do front (login,
+   listar mensagens por match, avaliar candidato → match → chat →
+   finalizar cronômetro → tempo salvo), todas confirmadas funcionando
+   contra o json-server real.
+
+### Verificação feita nesta rodada
+
+- `npm run lint` (oxlint): **0 warnings / 0 errors**.
+- `npm run build`: **ok** (`EXIT=0`; só o aviso esperado de chunk > 500 kB
+  do Leaflet).
+- Fluxo ponta a ponta contra o json-server real (login, mensagens por
+  match, match → chat → tempo): **confirmado funcionando** via script.
+- **Não verificado nesta rodada:** o app React de fato rodando num
+  navegador (só a build e as chamadas HTTP cruas foram testadas no
+  ambiente onde essa rodada foi feita, que não tem navegador disponível).
+  Recomendo rodar `npm run mock` + `npm run dev` localmente e conferir
+  visualmente antes de considerar essa rodada 100% fechada.
+
+---
+
+## 2026-10-02 — Cadastro rejeita data de nascimento futura e matches viram dados por conta
+
+### Contexto da rodada
+
+Dois bugs reportados pelo Patrick:
+
+1. **Cadastro aceitava data de nascimento no futuro** — o campo só tinha
+   `min(1)` no zod. Prova no próprio `db.json`: o usuário `astorias` foi
+   criado com `dataNascimento: "2026-10-22"` (data futura na época).
+2. **Ao trocar de conta, os matches da conta anterior continuavam
+   aparecendo** — `matches` era coleção global: sem `usuarioId` em
+   lugar nenhum, e `useMatches()` devolvia a lista inteira pra qualquer
+   usuário logado (Chat e Confronto, que consomem o hook, herdavam o
+   problema).
+
+### Mudança 1 — `src/pages/Cadastro.jsx`: validação da data
+
+- Função `hoje()` local (`YYYY-MM-DD` no fuso do Brasil — `toISOString`
+  usa UTC e adiantaria um dia perto da meia-noite).
+- `dataNascimento` no zod ganhou `.refine`: formato de data **e**
+  `valor <= hoje()`, com a mensagem "A data de nascimento não pode estar
+  no futuro".
+- Input ganhou `max={hoje()}`: o date picker nativo já bloqueia escolher
+  data futura (a validação do zod cobre digitação manual/programática).
+
+### Mudança 2 — matches por conta
+
+| Arquivo | Mudança |
+|---|---|
+| `src/api/ciclaApi.js` | `matchesApi.listar` → `listarPorUsuario(usuarioId)`, filtrando no JS (mesmo workaround do beta do json-server usado no login) |
+| `src/hooks/useCiclaData.js` | `useMatches()` lê `usuarioLogadoId()`; o id entra na `queryKey` (senão a cache do Tanstack mostraria os matches da conta anterior depois da troca de login) e `enabled` só com sessão; `useAvaliarCandidato` grava `usuarioId` no match novo |
+| `src/api/sessao.js` | `usuarioLogadoId()` devolve a string crua em vez de `Number()` — ids gerados pelo json-server são alfanuméricos (`"ye1i6QUqlGY"` → `NaN`, o que quebrava `GET /usuarios/NaN` no Perfil de contas novas) |
+| `db.json` | os 4 matches semeados ganharam `usuarioId: "1"` (dono = conta de teste) |
+
+**Bugs irmãos corrigidos junto:** o `NaN` do id (acima) e, por herdagem,
+Chat e Confronto passaram a ser por conta sem mexer nos componentes.
+
+### Mudança 3 — escopo por conta estendido a todas as coleções pessoais
+
+Pedido do Patrick na mesma data ("resolva esses problemas"): o padrão de
+`matches` foi estendido às demais coleções pessoais.
+
+| Coleção | Leitura | Escrita |
+|---|---|---|
+| `candidatos`, `treinos`, `tempos`, `confrontos`, `consultorias` | helper `porConta()` no `ciclaApi.js` — `listarPorUsuario(usuarioId)` filtrando no JS | `usuarioId` carimbado nas mutations (hooks `useMarcarTreino`, `useAdicionarTempo`, `useMarcarConfronto`, `useSolicitarConsultoria`) |
+| `equipes`, `ranking`, `melhoresTemposPorPercurso` | globais — diretório/leaderboard compartilhado, não dado pessoal | — |
+
+- Hooks `useCandidatos`/`useTreinos`/`useTempos`/`useConfrontos`/
+  `useConsultorias` no mesmo molde do `useMatches`: id na `queryKey`,
+  `enabled` só com sessão.
+- `db.json`: registros semeados das 4 coleções ganharam `usuarioId: "1"`.
+
+### Mudança 4 — dados do `db.json`
+
+- **Fila do Dar Match reabastecida** (estava `candidatos: []` — resíduo do
+  teste ponta a ponta da rodada de 2026-10-01): 3 candidatos pra conta de
+  teste (Pedro Lima, Júlia Souza, Rafael Nunes) e 3 pra conta secundária
+  (Larissa Prado, Caio Mendes, Beatriz Rocha), cada fila com o dono.
+- **Data de nascimento futura do usuário `astorias` corrigida**
+  (`2026-10-22` → `1999-07-21`) — resíduo do bug 1.
+
+### Como verificar
+
+- Login `teste@ciclaplus.com` → Chat com Ana Beatriz/Bruno Costa/Camila
+  Rocha/Elisa Martins. Sair e entrar com `tes@gmail.com` → Chat vazio
+  ("Você ainda não deu match com ninguém"), Perfil carrega, Confronto sem
+  adversários. Criar um match na conta 2: não aparece na conta 1.
+- `/cadastro` com data futura: erro inline "A data de nascimento não pode
+  estar no futuro", não navega; com data passada, cadastra normal.
+
+### Verificação feita nesta rodada
+
+- `npm.cmd run lint` (oxlint): **0 warnings / 0 errors**.
+- `npm.cmd run build`: **ok** (`EXIT=0`).
+- **17 checks automatizados no navegador real** (Brave via DevTools
+  Protocol, driver em `%TEMP%\opencode\brave-drive\verify.mjs`):
+  **17/17 PASS, zero erros de console** — cobrem troca de conta nos dois
+  sentidos, Perfil com id alfanumérico, criação de match isolado por
+  conta, `max`/refine da data (rejeita futura, aceita válida) e limpeza
+  de todos os dados de teste (usuário, match e candidato de verificação
+  removidos do `db.json`).
+- **+14 checks de escopo por coleção** (`verify2.mjs`, só leitura):
+  **14/14 PASS, zero erros de console** — conta 1 vê fila/treino/tempo/
+  confronto/consultoria dela e nada da conta 2, e vice-versa. Rodada
+  fechada com **31/31**.

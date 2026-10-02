@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMatches, useMensagens, useEnviarMensagem } from "../../hooks/useCiclaData.js";
 
 // Um item da lista de conversas — mesmo componente usado na lista mobile
 // (tela cheia) e na lista lateral do desktop.
@@ -25,13 +29,33 @@ function ItemConversa({ conversa, ativa, onSelecionar }) {
   );
 }
 
+const esquemaMensagem = z.object({
+  texto: z.string().trim().min(1, "Escreva algo antes de enviar"),
+});
+
 // A conversa aberta: histórico de mensagens + formulário de envio.
-function ThreadConversa({ conversa, rascunho, onMudarRascunho, onEnviar }) {
+function ThreadConversa({ conversa }) {
+  const { data: mensagens = [], isLoading } = useMensagens(conversa.id);
+  const enviarMutation = useEnviarMensagem(conversa.id);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(esquemaMensagem), defaultValues: { texto: "" } });
+
+  function aoEnviar(dados) {
+    enviarMutation.mutate(dados.texto.trim());
+    reset();
+  }
+
   return (
     <>
       <section className="border rounded p-3 mb-2" style={{ minHeight: "220px" }}>
-        {conversa.mensagens.map((mensagem, indice) => (
-          <p key={indice} className={"mb-2 " + (mensagem.autor === "Você" ? "text-end" : "")}>
+        {isLoading && <p className="text-body-secondary small m-0">Carregando conversa...</p>}
+        {mensagens.map((mensagem) => (
+          <p key={mensagem.id} className={"mb-2 " + (mensagem.autor === "Você" ? "text-end" : "")}>
             <span
               className={
                 "d-inline-block px-2 py-1 rounded " +
@@ -44,14 +68,15 @@ function ThreadConversa({ conversa, rascunho, onMudarRascunho, onEnviar }) {
         ))}
       </section>
 
-      <form className="d-flex gap-2" onSubmit={onEnviar}>
-        <input
-          type="text"
-          className="form-control"
-          placeholder={`Mensagem para ${conversa.nome}`}
-          value={rascunho}
-          onChange={(evento) => onMudarRascunho(evento.target.value)}
-        />
+      <form className="d-flex gap-2" onSubmit={handleSubmit(aoEnviar)} noValidate>
+        <section className="flex-grow-1">
+          <input
+            type="text"
+            className={"form-control" + (errors.texto ? " is-invalid" : "")}
+            placeholder={`Mensagem para ${conversa.nome}`}
+            {...register("texto")}
+          />
+        </section>
         <button type="submit" className="btn btn-primary">
           Enviar
         </button>
@@ -61,51 +86,58 @@ function ThreadConversa({ conversa, rascunho, onMudarRascunho, onEnviar }) {
 }
 
 export default function Chat() {
-  // Conversas e mensagens como dado local do componente.
-  const [conversas, setConversas] = useState([
-    {
-      id: 1,
-      nome: "Ana Beatriz",
-      distanciaKm: 3.2,
-      mensagens: [
-        { autor: "Ana Beatriz", texto: "Bora pedalar sábado?" },
-        { autor: "Você", texto: "Bora! Que horas?" },
-      ],
-    },
-    {
-      id: 2,
-      nome: "Bruno Costa",
-      distanciaKm: 5.8,
-      mensagens: [{ autor: "Bruno Costa", texto: "Valeu pelo treino de hoje!" }],
-    },
-  ]);
-
-  const [conversaAtivaId, setConversaAtivaId] = useState(conversas[0].id);
-  const [rascunho, setRascunho] = useState("");
+  // Conversas não são mais dado próprio do Chat — vêm de quem é match de
+  // verdade (Dar Match), buscado no json-server.
+  const { data: matches = [], isLoading, isError } = useMatches();
+  const [conversaAtivaId, setConversaAtivaId] = useState(null);
   // Só importa no mobile: lá a lista e a conversa aberta nunca aparecem
   // juntas, uma tela troca pela outra.
   const [telaMobile, setTelaMobile] = useState("lista");
 
-  const conversaAtiva = conversas.find((c) => c.id === conversaAtivaId);
+  // Se o id guardado deixou de ser um match (ainda não há nenhum, ou era o
+  // único e ele saiu da lista), cai pro primeiro match disponível —
+  // derivado no render, sem precisar de um effect só pra sincronizar state.
+  const idAtivo = matches.some((m) => m.id === conversaAtivaId)
+    ? conversaAtivaId
+    : matches[0]?.id ?? null;
+  const conversaAtiva = matches.find((m) => m.id === idAtivo);
 
   function abrirConversa(id) {
     setConversaAtivaId(id);
     setTelaMobile("thread");
   }
 
-  function enviarMensagem(evento) {
-    evento.preventDefault();
-    const texto = rascunho.trim();
-    if (!texto) return;
-
-    setConversas((atual) =>
-      atual.map((conversa) =>
-        conversa.id === conversaAtivaId
-          ? { ...conversa, mensagens: [...conversa.mensagens, { autor: "Você", texto }] }
-          : conversa
-      )
+  if (isLoading) {
+    return (
+      <main className="container py-4">
+        <h1 className="h3">Chat</h1>
+        <p className="text-body-secondary">Carregando seus matches...</p>
+      </main>
     );
-    setRascunho("");
+  }
+
+  if (isError) {
+    return (
+      <main className="container py-4">
+        <h1 className="h3">Chat</h1>
+        <aside className="bg-light border border-danger text-danger rounded p-2 small">
+          Não foi possível carregar seus matches. O json-server está rodando? (npm run mock)
+        </aside>
+      </main>
+    );
+  }
+
+  // Sem match, sem chat — é literalmente a regra pedida.
+  if (matches.length === 0) {
+    return (
+      <main className="container py-4">
+        <h1 className="h3">Chat</h1>
+        <aside className="text-body-secondary">
+          Você ainda não deu match com ninguém. Vá em <strong>Dar Match</strong> pra
+          começar uma conversa por aqui.
+        </aside>
+      </main>
+    );
   }
 
   return (
@@ -116,11 +148,11 @@ export default function Chat() {
           <>
             <h1 className="h3">Chat</h1>
             <ul className="list-group">
-              {conversas.map((conversa) => (
+              {matches.map((match) => (
                 <ItemConversa
-                  key={conversa.id}
-                  conversa={conversa}
-                  ativa={conversa.id === conversaAtivaId}
+                  key={match.id}
+                  conversa={match}
+                  ativa={match.id === idAtivo}
                   onSelecionar={abrirConversa}
                 />
               ))}
@@ -135,12 +167,7 @@ export default function Chat() {
             >
               <span className="material-icons align-middle">arrow_back</span> Voltar
             </button>
-            <ThreadConversa
-              conversa={conversaAtiva}
-              rascunho={rascunho}
-              onMudarRascunho={setRascunho}
-              onEnviar={enviarMensagem}
-            />
+            <ThreadConversa conversa={conversaAtiva} />
           </>
         )}
       </div>
@@ -151,23 +178,18 @@ export default function Chat() {
         <div className="row g-3">
           <section className="col-lg-4">
             <ul className="list-group">
-              {conversas.map((conversa) => (
+              {matches.map((match) => (
                 <ItemConversa
-                  key={conversa.id}
-                  conversa={conversa}
-                  ativa={conversa.id === conversaAtivaId}
+                  key={match.id}
+                  conversa={match}
+                  ativa={match.id === idAtivo}
                   onSelecionar={setConversaAtivaId}
                 />
               ))}
             </ul>
           </section>
           <section className="col-lg-8">
-            <ThreadConversa
-              conversa={conversaAtiva}
-              rascunho={rascunho}
-              onMudarRascunho={setRascunho}
-              onEnviar={enviarMensagem}
-            />
+            <ThreadConversa conversa={conversaAtiva} />
           </section>
         </div>
       </div>

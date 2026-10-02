@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import Footer from "./Footer.jsx";
+import { usuarioLogadoId } from "../../api/sessao.js";
 
 // Itens do menu com o nome atualizado para "Cronômetro"
 const ITENS = [
@@ -115,6 +116,11 @@ function MobileTabs() {
 }
 
 export default function AppLayout() {
+  // Guarda de rota mínima: sem sessão, nenhuma tela de /app/* é acessível.
+  if (usuarioLogadoId() == null) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="d-flex flex-column min-vh-100">
       <DesktopMenu />

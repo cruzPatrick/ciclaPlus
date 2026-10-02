@@ -21,6 +21,8 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
 |---|---|
 | Build | Vite 8 |
 | UI | React 19 + react-router-dom 7 (SPA, `BrowserRouter` com `basename` do Pages) |
+| Dados | Tanstack Query (`@tanstack/react-query`) + json-server (`db.json`, porta 3001) — ver `src/api/` e `src/hooks/useCiclaData.js` |
+| Formulários | react-hook-form + zod (`@hookform/resolvers/zod`) em todo formulário da aplicação |
 | Estilo | Bootstrap 5 via **import parcial do Sass** + paleta Cicla nas variáveis |
 | Mapa | Leaflet 1.9 + tiles OpenStreetMap (sem chave de API) |
 | Lint | oxlint (`npm run lint`) |
@@ -28,8 +30,15 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
 
 ## Regras invioláveis
 
-1. **Sem backend:** dados sempre locais nos componentes; nunca inventar API.
-   Persistência (localStorage/API) só quando a tarefa pedir explicitamente.
+1. **Backend mockado via json-server:** dados vivem em `db.json`, servido
+   em `http://localhost:3001` (`npm run mock`) e consumidos só através de
+   `src/api/*` + hooks do Tanstack Query (`src/hooks/useCiclaData.js`) —
+   nenhum componente faz `fetch` direto. Esta regra foi **revisada em
+   2026-10-01**: até então era "sem backend, tudo local" — o professor
+   passou a exigir integração com backend mockado, então o mock virou
+   parte obrigatória do fluxo (ver `npm run dev` + `npm run mock` no
+   README). Dados sensíveis de sessão (`usuarioId` logado) continuam só
+   em `localStorage`, nunca em texto hard-coded.
 2. **Cores só via variáveis do Bootstrap** (paleta em `custom.scss`): não
    escrever cor hard-coded em CSS/JS — `$primary`/`$secondary`/`.bg-ciclagrey`
    já nascem certos. CSS custom só onde o Bootstrap não cobre.

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
+import { useAdicionarTempo } from "../../hooks/useCiclaData.js";
 import "leaflet/dist/leaflet.css";
 import iconeMarcador from "leaflet/dist/images/marker-icon.png";
 import iconeMarcador2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -32,6 +33,7 @@ function formatarTempo(ms) {
 }
 
 export default function Mapa() {
+  const adicionarTempoMutation = useAdicionarTempo();
   const [consentimento, setConsentimento] = useState("pendente");
   const [erro, setErro] = useState("");
   const [rastreando, setRastreando] = useState(false);
@@ -161,15 +163,19 @@ export default function Mapa() {
   function iniciarCronometro() {
     rastreandoRef.current = true;
     setRastreando(true);
-    setTempoMs(0);
-    setDistanciaM(0);
-    inicioRef.current = Date.now();
 
+    // Retoma de onde parou: tempoMs só é zerado depois que o percurso é
+    // finalizado e salvo (finalizarCronometro). Parar e apertar play de
+    // novo NÃO perde o tempo/distância/trajeto já percorridos.
+    inicioRef.current = Date.now() - tempoMs;
     intervaloRef.current = setInterval(() => {
       setTempoMs(Date.now() - inicioRef.current);
     }, 1000);
 
-    if (posicaoAtualRef.current) {
+    // O ponto inicial da trilha só é definido na primeira vez que o
+    // cronômetro roda; ao retomar, a linha já desenhada continua de onde
+    // parou em vez de ser reiniciada no ponto atual.
+    if (trajetoRef.current.length === 0 && posicaoAtualRef.current) {
       trajetoRef.current = [posicaoAtualRef.current];
       linhaRef.current.setLatLngs(trajetoRef.current);
     }
@@ -182,6 +188,27 @@ export default function Mapa() {
       clearInterval(intervaloRef.current);
       intervaloRef.current = null;
     }
+  }
+
+  // Só ponto de entrada pra registrar um tempo em "Gerenciar Tempos": exige
+  // ter percorrido alguma distância real rastreada pelo mapa (não só o
+  // relógio rodando parado) — é o que garante que um tempo só existe se
+  // veio de um percurso guiado pelo mapa de verdade.
+  function finalizarCronometro() {
+    pararCronometro();
+    if (tempoMs === 0 || distanciaM === 0) return;
+
+    adicionarTempoMutation.mutate({
+      nome: `Percurso ${new Date().toLocaleDateString("pt-BR")}`,
+      tempo: formatarTempo(tempoMs),
+      distanciaKm: Number((distanciaM / 1000).toFixed(2)),
+    });
+
+    // Reseta só agora, depois de salvo, pra deixar pronto pro próximo percurso.
+    setTempoMs(0);
+    setDistanciaM(0);
+    trajetoRef.current = [];
+    if (linhaRef.current) linhaRef.current.setLatLngs([]);
   }
 
   if (consentimento === "pendente" || consentimento === "negado") {
@@ -252,7 +279,28 @@ export default function Mapa() {
               <span className="fs-5 fw-bold">{(distanciaM / 1000).toFixed(2)} km</span>
             </section>
           </article>
+
+          {tempoMs > 0 && (
+            <button
+              type="button"
+              className="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+              style={{ width: "44px", height: "44px" }}
+              aria-label="Finalizar e salvar tempo"
+              title="Finalizar e salvar tempo"
+              disabled={distanciaM === 0}
+              onClick={finalizarCronometro}
+            >
+              <span className="material-icons">check</span>
+            </button>
+          )}
         </nav>
+
+        {tempoMs > 0 && distanciaM === 0 && (
+          <aside className="bg-light border border-warning text-warning-emphasis rounded p-2 small text-center mb-3">
+            Continue pedalando com a localização ativa pra poder salvar o tempo —
+            só é possível registrar um percurso que realmente foi percorrido no mapa.
+          </aside>
+        )}
 
         {precisaoM != null && precisaoM > 1000 && (
           <aside className="bg-light border border-warning text-warning-emphasis rounded p-2 small text-center mb-3">

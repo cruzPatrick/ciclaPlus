@@ -1,27 +1,38 @@
 # Cicla+ — protótipo em React
 
 Migração do protótipo HTML do Cicla+ pra React, usando Bootstrap 5 como
-framework CSS e a paleta de cores do Cicla+.
+framework CSS, Tanstack Query + json-server como backend mockado, e
+react-hook-form + zod em todo formulário.
 
 ## Como rodar
 
+Precisa de **dois terminais** — um pro backend mockado, outro pro app:
+
 ```bash
 npm install
+
+# terminal 1 — backend mockado (json-server, porta 3001)
+npm run mock
+
+# terminal 2 — app React (Vite, porta 5173)
 npm run dev
 ```
+
+Login de teste: `teste@ciclaplus.com` / `123456` (dado inicial em
+`db.json`). Cadastro cria um usuário novo de verdade no mock.
 
 ## Estrutura de páginas (estilo Strava)
 
 - `/` → `Landing.jsx` — página pública, antes de logar (hero + CTA).
-- `/login`, `/cadastro` — telas de autenticação.
-- `/app/*` → `AppLayout.jsx` (menu fixo) + uma página própria por rota,
-  em vez de sections empilhadas com âncora:
+- `/login`, `/cadastro` — autenticação, contra o backend mockado.
+- `/app/*` → `AppLayout.jsx` (menu fixo, exige sessão) + uma página
+  própria por rota, em vez de sections empilhadas com âncora:
   `/app/descoberta`, `/app/chat`, `/app/treino-individual`,
   `/app/treino-equipe`, `/app/cronometro`, `/app/tempos`,
-  `/app/confronto`, `/app/consultoria`, `/app/ranking`.
+  `/app/confronto`, `/app/consultoria`, `/app/ranking`, `/app/perfil`.
 
-Login e Cadastro navegam direto pra `/app/descoberta` e `/login`
-respectivamente ao submeter (ainda sem backend — é só a simulação do fluxo).
+Login e Cadastro autenticam/criam conta de verdade contra o json-server
+e guardam a sessão (`usuarioId`) em `localStorage`.
 
 ## Decisões de estrutura
 
@@ -40,10 +51,17 @@ respectivamente ao submeter (ainda sem backend — é só a simulação do fluxo
   de login/cadastro do repositório base (`projeto-login`), que tem um
   formato bem específico (foto no topo, inputs com ícone) que o Bootstrap
   sozinho não cobre.
-- **Dados locais**: cada componente de tela guarda seus próprios dados em
-  variáveis locais (arrays/objetos no corpo da função) — ex: a lista de
-  conversas do chat, os ciclistas do ranking, as equipes do treino. Nada
-  vem de API/backend ainda.
+- **Backend mockado, não dados locais**: `db.json` (raiz do projeto) é
+  servido pelo json-server em `http://localhost:3001`. Nenhum componente
+  faz `fetch` direto — tudo passa por `src/api/ciclaApi.js` e pelos hooks
+  do Tanstack Query em `src/hooks/useCiclaData.js`. Pra editar os dados
+  iniciais (candidatos do Dar Match, matches, mensagens, treinos, tempos,
+  confrontos, consultorias, ranking), edite `db.json` com o json-server
+  parado (ele reescreve o arquivo a cada mutação).
+- **Formulários com react-hook-form + zod**: todo formulário (Login,
+  Cadastro, Chat, Treino, Confronto, Consultoria, Perfil) valida com um
+  schema zod via `@hookform/resolvers/zod` — mensagens de erro inline,
+  sem `alert()`.
 - **Uma página por rota**: cada funcionalidade que antes era uma section
   vira sua própria página em `src/pages/app/`, montada dentro do
   `AppLayout.jsx` (menu fixo + `<Outlet/>`), sem lógica de composição
@@ -53,11 +71,14 @@ respectivamente ao submeter (ainda sem backend — é só a simulação do fluxo
 
 ```
 src/
+  api/                  -> client.js (fetch wrapper), ciclaApi.js (funções por recurso), sessao.js
+  hooks/useCiclaData.js  -> hooks do Tanstack Query (useQuery/useMutation por recurso)
   pages/
     Landing.jsx        -> página pública
     Login.jsx, Cadastro.jsx
     app/                -> uma página por funcionalidade (rotas /app/*)
   components/
-    layout/             -> Header, Footer, AppLayout (menu fixo da área interna)
+    layout/             -> Header, Footer, AppLayout (menu fixo + guarda de rota)
   styles/custom.scss     -> tema Bootstrap + paleta Cicla+
+db.json                  -> dados iniciais do backend mockado (json-server)
 ```

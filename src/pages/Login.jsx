@@ -1,29 +1,39 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
+import { useLogin } from "../hooks/useCiclaData.js";
+import { salvarUsuarioLogado } from "../api/sessao.js";
+
+const esquemaLogin = z.object({
+  email: z.string().min(1, "Informe o e-mail").email("E-mail inválido"),
+  senha: z.string().min(1, "Informe a senha"),
+});
 
 export default function Login() {
   const navigate = useNavigate();
-  const [erro, setErro] = useState("");
+  const loginMutation = useLogin();
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({ resolver: zodResolver(esquemaLogin) });
 
   const textoApresentacao =
     "Conecte-se com outros ciclistas, encontre parceiros para pedalar, " +
     "participe de desafios e acompanhe sua evolução através dos rankings " +
     "da comunidade.";
 
-  const usuarioTeste = { email: "teste@ciclaplus.com", senha: "123456" };
-
-  function handleSubmit(evento) {
-    evento.preventDefault();
-    const dados = new FormData(evento.target);
-    const email = dados.get("email");
-    const senha = dados.get("senha");
-
-    if (email === usuarioTeste.email && senha === usuarioTeste.senha) {
-      setErro("");
-      navigate("/app/descoberta");
-    } else {
-      setErro("E-mail ou senha incorretos.");
+  async function aoEnviar(dados) {
+    const usuario = await loginMutation.mutateAsync(dados);
+    if (!usuario) {
+      setError("root", { message: "E-mail ou senha incorretos." });
+      return;
     }
+    salvarUsuarioLogado(usuario.id);
+    navigate("/app/descoberta");
   }
 
   return (
@@ -38,58 +48,58 @@ export default function Login() {
               {textoApresentacao}
             </p>
             <p className="small text-center text-body-secondary mb-2">
-              Teste com: <strong>{usuarioTeste.email}</strong> / senha{" "}
-              <strong>{usuarioTeste.senha}</strong>
+              Teste com: <strong>teste@ciclaplus.com</strong> / senha{" "}
+              <strong>123456</strong>
             </p>
           </header>
 
-          {erro && (
+          {(errors.root || loginMutation.isError) && (
             <aside className="bg-light border border-danger text-danger rounded p-2 small mb-3 text-center">
-              {erro}
+              {errors.root?.message ??
+                "Não foi possível falar com o servidor. O json-server está rodando? (npm run mock)"}
             </aside>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit(aoEnviar)} noValidate>
             <section className="form-floating position-relative mb-2">
               <span className="material-icons">person</span>
               <input
                 type="email"
-                className="form-control"
+                className={"form-control" + (errors.email ? " is-invalid" : "")}
                 id="iemail"
-                name="email"
                 placeholder="Seu e-mail"
                 autoComplete="email"
-                required
+                {...register("email")}
               />
               <label htmlFor="iemail">E-mail</label>
+              {errors.email && (
+                <p className="invalid-feedback d-block small mb-0">{errors.email.message}</p>
+              )}
             </section>
 
             <section className="form-floating position-relative mb-3">
               <span className="material-icons">vpn_key</span>
               <input
                 type="password"
-                className="form-control"
+                className={"form-control" + (errors.senha ? " is-invalid" : "")}
                 id="isenha"
-                name="senha"
                 placeholder="Sua senha"
                 autoComplete="current-password"
-                required
+                {...register("senha")}
               />
               <label htmlFor="isenha">Senha</label>
+              {errors.senha && (
+                <p className="invalid-feedback d-block small mb-0">{errors.senha.message}</p>
+              )}
             </section>
 
-            <button type="submit" className="btn btn-primary w-100">
-              Entrar
+            <button type="submit" className="btn btn-primary w-100" disabled={isSubmitting}>
+              {isSubmitting ? "Entrando..." : "Entrar"}
             </button>
 
-            <Link
-              to="/cadastro"
-              className="btn btn-outline-primary w-100 mt-2"
-            >
+            <Link to="/cadastro" className="btn btn-outline-primary w-100 mt-2">
               Criar conta
-              <span className="material-icons align-middle ms-1">
-                person_add
-              </span>
+              <span className="material-icons align-middle ms-1">person_add</span>
             </Link>
 
             <a href="#" className="btn btn-outline-secondary w-100 mt-2">

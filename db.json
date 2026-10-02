@@ -1,0 +1,248 @@
+{
+  "usuarios": [
+    {
+      "id": "1",
+      "nome": "Usuário Teste",
+      "email": "teste@ciclaplus.com",
+      "senha": "123456",
+      "telefone": "(21) 99999-0000",
+      "dataNascimento": "1998-04-12",
+      "perfil": "ciclista"
+    },
+    {
+      "nome": "astorias",
+      "email": "tes@gmail.com",
+      "telefone": "21 11111 1111",
+      "dataNascimento": "1999-07-21",
+      "senha": "123456",
+      "perfil": "ciclista",
+      "id": "ye1i6QUqlGY"
+    }
+  ],
+  "candidatos": [
+    {
+      "nome": "Pedro Lima",
+      "tipo": "Estrada",
+      "distanciaKm": 4.7,
+      "usuarioId": "1",
+      "id": "aNez7ZNIR8I"
+    },
+    {
+      "nome": "Júlia Souza",
+      "tipo": "Mountain bike",
+      "distanciaKm": 2.3,
+      "usuarioId": "1",
+      "id": "RTHXzV9ZK7E"
+    },
+    {
+      "nome": "Rafael Nunes",
+      "tipo": "Urbano",
+      "distanciaKm": 6.1,
+      "usuarioId": "1",
+      "id": "_B0ZcIMxOtA"
+    },
+    {
+      "nome": "Caio Mendes",
+      "tipo": "Urbano",
+      "distanciaKm": 1.8,
+      "usuarioId": "ye1i6QUqlGY",
+      "id": "kPwvOB95124"
+    },
+    {
+      "nome": "Beatriz Rocha",
+      "tipo": "Mountain bike",
+      "distanciaKm": 5.2,
+      "usuarioId": "ye1i6QUqlGY",
+      "id": "zYpOWbq7Aio"
+    },
+    {
+      "nome": "Larissa Prado",
+      "tipo": "Estrada",
+      "distanciaKm": 3.4,
+      "usuarioId": "ye1i6QUqlGY",
+      "id": "sVKHKCE6Fxo"
+    }
+  ],
+  "matches": [
+    {
+      "id": "1",
+      "nome": "Ana Beatriz",
+      "distanciaKm": 3.2,
+      "usuarioId": "1"
+    },
+    {
+      "id": "2",
+      "nome": "Bruno Costa",
+      "distanciaKm": 5.8,
+      "usuarioId": "1"
+    },
+    {
+      "id": "4GX3C6i6b9Y",
+      "nome": "Camila Rocha",
+      "distanciaKm": 1.4,
+      "usuarioId": "1"
+    },
+    {
+      "id": "XhlgLX4RYWo",
+      "nome": "Elisa Martins",
+      "distanciaKm": 2.7,
+      "usuarioId": "1"
+    }
+  ],
+  "mensagens": [
+    {
+      "id": "1",
+      "matchId": 1,
+      "autor": "Ana Beatriz",
+      "texto": "Bora pedalar sábado?"
+    },
+    {
+      "id": "2",
+      "matchId": 1,
+      "autor": "Você",
+      "texto": "Bora! Que horas?"
+    },
+    {
+      "id": "3",
+      "matchId": 2,
+      "autor": "Bruno Costa",
+      "texto": "Valeu pelo treino de hoje!"
+    }
+  ],
+  "treinos": [
+    {
+      "id": "1",
+      "data": "2026-09-30",
+      "hora": "20:00",
+      "tipo": "individual",
+      "equipe": null,
+      "feito": false,
+      "usuarioId": "1"
+    }
+  ],
+  "equipes": [
+    {
+      "id": "1",
+      "nome": "Equipe 1"
+    },
+    {
+      "id": "2",
+      "nome": "Equipe 2"
+    }
+  ],
+  "tempos": [
+    {
+      "id": "1",
+      "nome": "Ciclovia da Orla",
+      "tempo": "00:18:42",
+      "distanciaKm": 8.5,
+      "usuarioId": "1"
+    },
+    {
+      "id": "2",
+      "nome": "Volta do Parque Central",
+      "tempo": "00:12:05",
+      "distanciaKm": 5.2,
+      "usuarioId": "1"
+    },
+    {
+      "id": "3",
+      "nome": "Trilha da Montanha",
+      "tempo": "00:45:30",
+      "distanciaKm": 14.1,
+      "usuarioId": "1"
+    },
+    {
+      "id": "4",
+      "nome": "Percurso Urbano Centro",
+      "tempo": "00:22:15",
+      "distanciaKm": 9,
+      "usuarioId": "1"
+    }
+  ],
+  "confrontos": [
+    {
+      "id": "1",
+      "adversario": "Ana Beatriz",
+      "status": "resultado_registrado",
+      "resultado": "Vitória",
+      "usuarioId": "1"
+    },
+    {
+      "id": "2",
+      "adversario": "Bruno Costa",
+      "status": "resultado_registrado",
+      "resultado": "Vitória",
+      "usuarioId": "1"
+    },
+    {
+      "adversario": "Elisa Martins",
+      "status": "pendente_aceite_adversario",
+      "resultado": null,
+      "id": "cOGzB3UqXZs",
+      "usuarioId": "1"
+    }
+  ],
+  "consultorias": [
+    {
+      "id": "1",
+      "especialista": "Treinador Marcos Lima",
+      "assunto": "Melhorar cadência em subidas",
+      "data": "2026-10-05",
+      "status": "pendente",
+      "usuarioId": "1"
+    },
+    {
+      "especialista": "Treinador Marcos Lima",
+      "assunto": "melhorar velocidade",
+      "data": "2026-10-21",
+      "status": "pendente",
+      "id": "RhwlAZSj4Mw",
+      "usuarioId": "1"
+    }
+  ],
+  "ranking": [
+    {
+      "id": "1",
+      "nome": "João Silva",
+      "pontuacao": 1500,
+      "melhorTempo": "00:45:30"
+    },
+    {
+      "id": "2",
+      "nome": "Maria Oliveira",
+      "pontuacao": 1400,
+      "melhorTempo": "00:47:15"
+    },
+    {
+      "id": "3",
+      "nome": "Carlos Santos",
+      "pontuacao": 1350,
+      "melhorTempo": "00:48:20"
+    }
+  ],
+  "melhoresTemposPorPercurso": [
+    {
+      "id": "1",
+      "percurso": "Ciclovia da Orla",
+      "ciclista": "João Silva",
+      "tempo": "00:18:42",
+      "distanciaKm": 8.5
+    },
+    {
+      "id": "2",
+      "percurso": "Ciclovia da Orla",
+      "ciclista": "Carlos Santos",
+      "tempo": "00:19:10",
+      "distanciaKm": 8.5
+    },
+    {
+      "id": "3",
+      "percurso": "Ciclovia do Parque",
+      "ciclista": "Maria Oliveira",
+      "tempo": "00:12:05",
+      "distanciaKm": 5.2
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

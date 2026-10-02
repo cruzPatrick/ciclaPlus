@@ -1,4 +1,12 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  useMatches,
+  useConfrontos,
+  useMarcarConfronto,
+  useAtualizarConfronto,
+} from "../../hooks/useCiclaData.js";
 
 // Estados do confronto com fluxo de dupla confirmação:
 // pendente_aceite_adversario -> aguarda o outro aceitar
@@ -14,57 +22,40 @@ const STATUS = {
   encerrado: { rotulo: "Encerrado", cor: "dark" },
 };
 
+const esquemaDesafio = z.object({
+  adversario: z.string().min(1, "Selecione um ciclista que deu match"),
+});
+
 export default function Confronto() {
-  // Lista simulada de utilizadores com quem deu MATCH na aba "Dar Match"
-  const [minhosMatches] = useState([
-    { id: 101, nome: "Ana Beatriz" },
-    { id: 102, nome: "Bruno Costa" },
-    { id: 103, nome: "Camila Rocha" },
-  ]);
+  // Lista de quem realmente deu match (Dar Match) — antes essa tela tinha
+  // sua própria lista simulada, desligada do match de verdade.
+  const { data: matches = [] } = useMatches();
+  const { data: confrontos = [], isLoading, isError } = useConfrontos();
+  const marcarMutation = useMarcarConfronto();
+  const atualizarMutation = useAtualizarConfronto();
 
-  // Lista local de confrontos
-  const [confrontos, setConfrontos] = useState([
-    { id: 1, adversario: "Ana Beatriz", status: "confirmado", resultado: null },
-    { id: 2, adversario: "Bruno Costa", status: "pendente_meu_aceite", resultado: null },
-    { id: 3, adversario: "Camila Rocha", status: "pendente_aceite_adversario", resultado: null },
-  ]);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({ resolver: zodResolver(esquemaDesafio) });
 
-  const [adversarioSelecionado, setAdversarioSelecionado] = useState("");
-
-  function marcarConfronto(evento) {
-    evento.preventDefault();
-    if (!adversarioSelecionado) return;
-
-    setConfrontos((atual) => [
-      ...atual,
-      {
-        id: Date.now(),
-        adversario: adversarioSelecionado,
-        status: "pendente_aceite_adversario",
-        resultado: null,
-      },
-    ]);
-    setAdversarioSelecionado("");
+  async function aoEnviar(dados) {
+    await marcarMutation.mutateAsync(dados.adversario);
+    reset();
   }
 
   function aceitarDesafio(id) {
-    setConfrontos((atual) =>
-      atual.map((c) => (c.id === id ? { ...c, status: "confirmado" } : c))
-    );
+    atualizarMutation.mutate({ id, dados: { status: "confirmado" } });
   }
 
   function registrarResultado(id, resultado) {
-    setConfrontos((atual) =>
-      atual.map((c) =>
-        c.id === id ? { ...c, status: "resultado_registrado", resultado } : c
-      )
-    );
+    atualizarMutation.mutate({ id, dados: { status: "resultado_registrado", resultado } });
   }
 
   function confirmarEncerramento(id) {
-    setConfrontos((atual) =>
-      atual.map((c) => (c.id === id ? { ...c, status: "encerrado" } : c))
-    );
+    atualizarMutation.mutate({ id, dados: { status: "encerrado" } });
   }
 
   return (
@@ -82,28 +73,33 @@ export default function Confronto() {
           <header className="mb-2">
             <h2 className="h6 fw-bold m-0">Desafiar um Match</h2>
           </header>
-          <form className="row g-2" onSubmit={marcarConfronto}>
+          <form className="row g-2" onSubmit={handleSubmit(aoEnviar)} noValidate>
             <section className="col-auto flex-grow-1">
               <label htmlFor="select-match" className="visually-hidden">
                 Escolha o parceiro de match
               </label>
               <select
                 id="select-match"
-                className="form-select"
-                value={adversarioSelecionado}
-                onChange={(e) => setAdversarioSelecionado(e.target.value)}
-                required
+                className={"form-select" + (errors.adversario ? " is-invalid" : "")}
+                defaultValue=""
+                {...register("adversario")}
               >
                 <option value="">Selecione um ciclista que deu match...</option>
-                {minhosMatches.map((match) => (
+                {matches.map((match) => (
                   <option key={match.id} value={match.nome}>
                     {match.nome}
                   </option>
                 ))}
               </select>
+              {errors.adversario && (
+                <p className="invalid-feedback d-block small mb-0">{errors.adversario.message}</p>
+              )}
+              {matches.length === 0 && (
+                <p className="form-text m-0">Você ainda não deu match com ninguém.</p>
+              )}
             </section>
             <section className="col-auto">
-              <button type="submit" className="btn btn-primary w-100">
+              <button type="submit" className="btn btn-primary w-100" disabled={isSubmitting}>
                 Enviar Desafio
               </button>
             </section>
@@ -111,6 +107,13 @@ export default function Confronto() {
         </article>
 
         {/* Lista dos Confrontos */}
+        {isLoading && <p className="text-body-secondary">Carregando confrontos...</p>}
+        {isError && (
+          <aside className="bg-light border border-danger text-danger rounded p-2 small">
+            Não foi possível carregar os confrontos. O json-server está rodando? (npm run mock)
+          </aside>
+        )}
+
         <section className="d-flex flex-column gap-3">
           {confrontos.map((confronto) => (
             <article
