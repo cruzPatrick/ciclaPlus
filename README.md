@@ -8,6 +8,9 @@ react-hook-form + zod em todo formulário.
 
 Precisa de **dois terminais** — um pro backend mockado, outro pro app:
 
+Em ambos os terminais, entre na pasta `frontend` com `cd frontend` antes
+de executar os comandos abaixo:
+
 ```bash
 npm install
 
@@ -36,6 +39,8 @@ e guardam a sessão (`usuarioId`) em `localStorage`.
 
 ## Decisões de estrutura
 
+Os caminhos desta seção são relativos à pasta `frontend`.
+
 - **Cores sem CSS custom**: `src/styles/custom.scss` sobrescreve as
   variáveis do Bootstrap (`$primary`, `$secondary`) com a paleta Cicla+
   (Pine Blue `#357266`, Taupe Grey `#6F5E5C`) e adiciona o Ash Grey
@@ -51,7 +56,7 @@ e guardam a sessão (`usuarioId`) em `localStorage`.
   de login/cadastro do repositório base (`projeto-login`), que tem um
   formato bem específico (foto no topo, inputs com ícone) que o Bootstrap
   sozinho não cobre.
-- **Backend mockado, não dados locais**: `db.json` (raiz do projeto) é
+- **Backend mockado, não dados locais**: `db.json` (na pasta `frontend`) é
   servido pelo json-server em `http://localhost:3001`. Nenhum componente
   faz `fetch` direto — tudo passa por `src/api/ciclaApi.js` e pelos hooks
   do Tanstack Query em `src/hooks/useCiclaData.js`. Pra editar os dados
@@ -70,15 +75,23 @@ e guardam a sessão (`usuarioId`) em `localStorage`.
 ## Estrutura
 
 ```
-src/
-  api/                  -> client.js (fetch wrapper), ciclaApi.js (funções por recurso), sessao.js
-  hooks/useCiclaData.js  -> hooks do Tanstack Query (useQuery/useMutation por recurso)
-  pages/
-    Landing.jsx        -> página pública
-    Login.jsx, Cadastro.jsx
-    app/                -> uma página por funcionalidade (rotas /app/*)
-  components/
-    layout/             -> Header, Footer, AppLayout (menu fixo + guarda de rota)
-  styles/custom.scss     -> tema Bootstrap + paleta Cicla+
-db.json                  -> dados iniciais do backend mockado (json-server)
+frontend/
+  src/
+    api/                  -> client.js (fetch wrapper), ciclaApi.js (funções por recurso), sessao.js
+    hooks/useCiclaData.js  -> hooks do Tanstack Query (useQuery/useMutation por recurso)
+    pages/
+      Landing.jsx        -> página pública
+      Login.jsx, Cadastro.jsx
+      app/                -> uma página por funcionalidade (rotas /app/*)
+    components/
+      layout/             -> Header, Footer, AppLayout (menu fixo + guarda de rota)
+    styles/custom.scss     -> tema Bootstrap + paleta Cicla+
+  public/                  -> imagens e ícones
+  db.json                  -> dados iniciais do backend mockado (json-server)
+  index.html
+  package.json
+  package-lock.json
+  vite.config.js
+docs/                      -> documentos de gerência
+mudancas/                  -> contexto e histórico do projeto
 ```
