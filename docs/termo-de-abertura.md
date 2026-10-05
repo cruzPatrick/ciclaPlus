@@ -47,7 +47,7 @@ As operações complementares recomendadas pela matriz não ampliam automaticame
 - Comércio de bicicletas ou equipamentos.
 - Integração nativa com smartwatches ou sensores externos.
 
-A API Express e a persistência em MongoDB integram a extensão proposta M2 descrita no [Plano do Projeto](plano-projeto1.md). Sua execução depende de decisão da equipe de desenvolvimento e aprovação do patrocinador, com atualização dos documentos. As restrições ao início dessa extensão referem-se ao backend próprio; o `json-server` já integra a demonstração de M1.
+A API Express e a persistência em MongoDB integram a extensão proposta M2 descrita no [Plano do Projeto](plano-de-projetoV7.md). Sua execução depende de decisão da equipe de desenvolvimento e aprovação do patrocinador, com atualização dos documentos. As restrições ao início dessa extensão referem-se ao backend próprio; o `json-server` já integra a demonstração de M1.
 
 ## 5. Critérios de sucesso
 
@@ -91,7 +91,7 @@ Mudanças de escopo devem ser decididas pela equipe de desenvolvimento e comunic
 | Entrega do Business Case, Termo de Abertura, Plano do Projeto e Dicionário da EAP | **05/10/2026** |
 | Entrega do frontend completo, com as funcionalidades planejadas demonstráveis | **06/10/2026** |
 
-A conclusão e a verificação dos fluxos de relacionamento, atividades e desempenho antecedem a entrega do frontend. Seu detalhamento está no [Plano do Projeto](plano-projeto1.md).
+A conclusão e a verificação dos fluxos de relacionamento, atividades e desempenho antecedem a entrega do frontend. Seu detalhamento está no [Plano do Projeto](plano-de-projetoV7.md).
 
 ## 8. Recursos e restrições
 
