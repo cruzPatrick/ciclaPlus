@@ -2,7 +2,7 @@
 
 **Versão:** 1.0 — frontend demonstrável e extensão integrada proposta  
 **Data:** 05/10/2026  
-**Linha de base do escopo:** este dicionário, a declaração do escopo e a EAP em [plano-projeto1.md](plano-projeto1.md), em conjunto com o [Termo de Abertura](termo-de-abertura.md) e o [Business Case](business-case.md).
+**Linha de base do escopo:** este dicionário, a declaração do escopo e a EAP em [plano-projeto1.md](plano-de-projetoV7.md), em conjunto com o [Termo de Abertura](termo-de-abertura.md) e o [Business Case](business-case.md).
 
 Cada linha descreve um pacote-folha da EAP. **A** é quem presta contas do aceite; **R** é quem executa. A matriz 5.7 do Plano de Projeto designa A para os pacotes de nível superior; neste dicionário, a prestação de contas é detalhada por pacote-folha a partir do integrante que lidera a atividade correspondente nas alocações individuais das seções 5.5 e 5.6. Os R também refletem essas atribuições específicas, sem repetir automaticamente a equipe inteira em todas as entregas.
 
@@ -88,6 +88,6 @@ M2 não é parte da linha de base aprovada pelo Termo de Abertura ou Business Ca
 
 ## Referências
 
-- [Plano de Projeto Cicla+ — versão 7](plano-projeto7.md)
+- [Plano de Projeto Cicla+ — versão 7](plano-de-projetoV7.md)
 - [Termo de Abertura do Projeto Cicla+](termo-de-abertura.md)
 - [Business Case Cicla+](business-case.md)
