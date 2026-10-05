@@ -130,4 +130,4 @@ Este registro deve ser atualizado quando as validações ocorrerem. A publicaç�
 - Cicla+ — Matrizes de Requisitos: matriz CRUD, perfis e priorização dos casos de uso.
 - Informações de escopo, equipe, recursos e prazos fornecidas pelas equipes.
 - [Business Case do Cicla+](business-case.md).
-- [Plano do Projeto Cicla+](plano-projeto1.md).
+- [Plano do Projeto Cicla+](plano-de-projetoV7.md).
