@@ -285,8 +285,6 @@ gantt
     M2 aceite GPTI :milestone, m2gpti, 2026-11-30, 0d
 ```
 
-A versão interativa, com destaque das dependências, está em [Gantt de recursos — Cicla+](ciclaplus-gantt-recursos.html).
-
 #### Gantt de alocação individual
 
 Cada barra identifica semana, atividade e horas alocadas à pessoa. S1–S12 usam as datas de aula indicadas na seção 5.1; D09–D12 aparecem somente após M1 e dependem da aprovação da extensão.
@@ -383,8 +381,6 @@ gantt
     S11 G08 Status 3 (3 h) :g4s11, 2026-11-16, 1d
     S12 G09 Arquivo (3 h) :g4s12, 2026-11-30, 1d
 ```
-
-A [versão HTML interativa da alocação](ciclaplus-gantt-alocacao-individual.html) permanece disponível com barras proporcionais às horas.
 
 O caminho crítico técnico de M1 é D01 → D02 → D03 → D04 → D05 → D06 → D07 → D08 → M1; o caminho de M2, se aprovado, é D09 → D10 → D11 → D12 → M2. A cadeia de gestão é G01 → G02 → G03 → G04 → G05 até M1, seguida por G06 → G07 → G08 → G09 até o encerramento proposto. O gráfico individual também mostra a sequência de tarefas por integrante; suas horas correspondem às tabelas das seções 5.5 e 5.6.
 
