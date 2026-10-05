@@ -2,7 +2,7 @@
 
 **Finalidade:** justificar a entrega acadêmica do frontend
 
-**Situação:** versão revisada para validação · **Atualização:** 01/10/2026
+**Situação:** versão revisada para validação · **Atualização:** 05/10/2026
 
 Documento relacionado: [Termo de Abertura do Projeto](termo-de-abertura.md).
 
@@ -16,7 +16,9 @@ O Cicla+ propõe reunir relacionamento e acompanhamento de desempenho em uma int
 
 Concluir o frontend para demonstrar os **15 casos de uso listados e priorizados na matriz de requisitos**. A entrega abrange match, chat, Boost, passeios, treinos, consultoria, cronometragem, manutenção de tempos, confrontos e rankings, respeitando os perfis Ciclista e Equipe. A relação completa está no [escopo do Termo de Abertura](termo-de-abertura.md#4-escopo-de-alto-nível).
 
-A demonstração usará **dados locais e usuários fictícios**, como aceito pelo professor. Backend, banco de dados, comunicação entre usuários reais e cobrança de serviços ficam fora desta entrega.
+A demonstração de M1 usará **usuários fictícios e dados servidos localmente pelo backend mockado `json-server`**. O mock dá suporte à leitura e à atualização dos dados usados pelo frontend. Backend próprio em Express, persistência em MongoDB, comunicação entre usuários reais e cobrança de serviços ficam fora desta entrega.
+
+A API Express e o MongoDB são uma extensão proposta para M2 no [Plano do Projeto](plano-projeto1.md), condicionada à decisão da equipe de desenvolvimento e à aprovação do patrocinador. O uso do `json-server` em M1 já faz parte da solução atual.
 
 ## 3. Valor esperado
 
@@ -29,18 +31,18 @@ A entrega acadêmica permite avaliar esses fluxos antes de evoluir o produto. Os
 | Alternativa | Avaliação para esta etapa |
 | --- | --- |
 | Manter o frontend como esboço | Não atende à entrega das funcionalidades demonstráveis. |
-| **Concluir o frontend com dados locais** | **Atende ao escopo aceito e permite demonstrar os fluxos.** |
-| Ampliar agora para um sistema com backend | Amplia o trabalho além da entrega definida e aumenta o risco de atraso. |
+| **Concluir o frontend com dados fictícios e `json-server` local** | **Permite demonstrar os fluxos da entrega M1 com a integração já adotada pela equipe.** |
+| Ampliar agora para uma API Express com MongoDB | Antecipa a extensão proposta para M2, amplia o trabalho da entrega atual e aumenta o risco de atraso. |
 
-**Recomendação:** concluir o frontend com dados locais, mantendo todas as funcionalidades planejadas demonstráveis para a avaliação.
+**Recomendação:** concluir o frontend integrado ao `json-server` local, mantendo todas as funcionalidades planejadas demonstráveis para a avaliação de M1.
 
 ## 5. Recursos e viabilidade
 
-O projeto aproveita o frontend existente. Segundo o levantamento com a equipe, a implementação está concentrada em um integrante com computador e disponibilidade informada de **quatro a seis horas semanais**. Esse valor se refere ao integrante que respondeu, não à capacidade total da equipe.
+O projeto aproveita o frontend existente e a integração com `json-server`. No levantamento inicial, a implementação estava concentrada em um integrante com computador e disponibilidade de **quatro a seis horas semanais**. O Plano do Projeto passou a distribuir o trabalho entre os três integrantes Dev e os quatro de gerência, com premissas de capacidade de **4,5 h semanais por integrante Dev** e **4 h semanais por integrante de gerência nas semanas S4–S12**.
 
-A integração entre telas e essa restrição de recursos são os principais riscos ao prazo. O esforço restante precisa ser dimensionado no Plano do Projeto; o prazo definido não comprova, por si só, que o trabalho cabe na disponibilidade informada.
+A integração entre telas e a disponibilidade efetiva de pessoas e equipamentos continuam sendo riscos ao prazo. As alocações do plano são estimativas de planejamento e devem ser conferidas com o trabalho restante.
 
-**Custos:** permanece pendente confirmar se haverá desembolso ou uso exclusivo de recursos já disponíveis. Não há orçamento financeiro informado que permita quantificar o investimento ou calcular retorno. Eventuais despesas e o esforço da equipe devem ser considerados no Plano do Projeto, sem presumir custo zero.
+**Custos:** o Plano do Projeto prevê desembolso de **R$ 0,00**, condicionado ao uso dos recursos já disponíveis. Para fins acadêmicos, estima **R$ 6.170,60** de custo econômico simulado, incluindo reservas, para o cenário completo M1 + M2. Esse valor inclui a extensão ainda sujeita à aprovação; não corresponde a pagamento previsto nem a orçamento exclusivo de M1. A simulação de esforço e custo não comprova retorno financeiro.
 
 ## 6. Monetização futura
 
@@ -63,3 +65,4 @@ O professor realizará a avaliação acadêmica; a equipe de desenvolvimento apr
 - Cicla+ — Matrizes de Requisitos: matriz CRUD, perfis e priorização dos casos de uso.
 - Informações confirmadas de escopo, recursos e prazos fornecidas pelas equipes.
 - [Termo de Abertura do Projeto Cicla+](termo-de-abertura.md).
+- [Plano do Projeto Cicla+](plano-projeto1.md).

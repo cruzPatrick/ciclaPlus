@@ -1,6 +1,6 @@
 # Termo de Abertura do Projeto Cicla+
 
-**Situação:** versão revisada para validação · **Atualização:** 01/10/2026
+**Situação:** versão revisada para validação · **Atualização:** 05/10/2026
 
 **Documentação:** 05/10/2026 · **Frontend:** 06/10/2026
 
@@ -10,7 +10,7 @@ Documento relacionado: [Business Case](business-case.md).
 
 O Cicla+ propõe facilitar a busca por parceiros de treino e a organização de atividades para ciclistas e equipes amadoras de ciclismo, com acompanhamento de desempenho por tempos, confrontos e rankings.
 
-Nesta etapa, o projeto entrega um **frontend demonstrável, com dados locais e usuários fictícios**, para avaliação acadêmica.
+Nesta etapa (M1), o projeto entrega um **frontend demonstrável, com usuários fictícios e dados servidos localmente pelo backend mockado `json-server`**, para avaliação acadêmica.
 
 ## 2. Justificativa resumida
 
@@ -35,21 +35,23 @@ A formação de novas conexões e o aumento do engajamento são benefícios espe
 | Desempenho | Cronometrar Desempenho; Manter Tempo; Conferir Ranking; Emitir Ranking. |
 | Confrontos | Marcar Confronto; Confirmar Confronto; Registrar Resultado; Confirmar Encerramento. |
 
-As funcionalidades serão demonstradas no frontend com dados locais e usuários fictícios. O Boost será apresentado como funcionalidade de destaque de perfil, sem cobrança real.
+As funcionalidades serão demonstradas no frontend com dados fictícios servidos localmente pelo `json-server`. O mock faz parte da entrega M1 e dá suporte à leitura e à atualização dos dados usados pelas telas. O Boost será apresentado como funcionalidade de destaque de perfil, sem cobrança real.
 
 As operações complementares recomendadas pela matriz não ampliam automaticamente este escopo; sua inclusão depende de decisão da equipe de desenvolvimento.
 
 ### Fora desta etapa
 
-- Backend e banco de dados.
+- Backend próprio em Express e persistência em MongoDB.
 - Operação entre usuários reais em dispositivos diferentes.
 - Processamento de pagamentos.
 - Comércio de bicicletas ou equipamentos.
 - Integração nativa com smartwatches ou sensores externos.
 
+A API Express e a persistência em MongoDB integram a extensão proposta M2 descrita no [Plano do Projeto](plano-projeto1.md). Sua execução depende de decisão da equipe de desenvolvimento e aprovação do patrocinador, com atualização dos documentos. As restrições ao início dessa extensão referem-se ao backend próprio; o `json-server` já integra a demonstração de M1.
+
 ## 5. Critérios de sucesso
 
-- Os 15 casos de uso permitem executar suas interações previstas com dados de demonstração, sem depender de backend.
+- Os 15 casos de uso permitem executar suas interações previstas com dados fictícios e o `json-server` local, sem depender da API Express ou do MongoDB propostos para M2.
 - Os fluxos relacionados mantêm coerência entre telas durante a demonstração; regras de match, treino, percurso, tempo e resultado são verificáveis.
 - Os quatro documentos são entregues em 05/10/2026 e o frontend em 06/10/2026.
 - O professor avalia e aceita a entrega e sua documentação. A aprovação será registrada após a avaliação.
@@ -89,27 +91,27 @@ Mudanças de escopo devem ser decididas pela equipe de desenvolvimento e comunic
 | Entrega do Business Case, Termo de Abertura, Plano do Projeto e Dicionário da EAP | **05/10/2026** |
 | Entrega do frontend completo, com as funcionalidades planejadas demonstráveis | **06/10/2026** |
 
-A conclusão e a verificação dos fluxos de relacionamento, atividades e desempenho antecedem a entrega do frontend. Seu detalhamento será organizado no Plano do Projeto.
+A conclusão e a verificação dos fluxos de relacionamento, atividades e desempenho antecedem a entrega do frontend. Seu detalhamento está no [Plano do Projeto](plano-projeto1.md).
 
 ## 8. Recursos e restrições
 
-Segundo o levantamento com a equipe, a implementação está concentrada em um integrante devido à disponibilidade de computador. Esse integrante informou dedicação de **quatro a seis horas semanais**; esse valor não representa a capacidade total da equipe. O planejamento deve considerar essa restrição e os prazos fixos de entrega.
+No levantamento inicial, a implementação estava concentrada em um integrante com computador, que informou dedicação de **quatro a seis horas semanais**. O Plano do Projeto passou a distribuir atividades entre os três integrantes Dev e os quatro de gerência, usando como premissas de capacidade **4,5 h semanais por integrante Dev** e **4 h semanais por integrante de gerência nas semanas S4–S12**. Essas premissas precisam corresponder à disponibilidade efetiva de pessoas e equipamentos.
 
-A etapa utiliza o repositório e o ambiente de desenvolvimento do frontend.
+A etapa utiliza o repositório, o ambiente de desenvolvimento do frontend e o `json-server` local com dados fictícios.
 
-**Recursos financeiros:** não há valor de orçamento definido neste termo. Permanece pendente confirmar se haverá desembolso ou uso exclusivo de recursos já disponíveis. Recursos e eventuais custos serão registrados no Plano do Projeto; ausência de valor informado não significa custo zero nem autorização de despesa.
+**Recursos financeiros:** o Plano do Projeto prevê desembolso de **R$ 0,00**, condicionado ao uso dos recursos já disponíveis, e apresenta custos econômicos simulados para fins acadêmicos. A estimativa de **R$ 6.170,60**, incluindo reservas, considera o cenário completo M1 + M2; sua parcela referente a M2 depende da aprovação da extensão e não representa despesa autorizada.
 
 ## 9. Premissas e riscos iniciais
 
 | Premissa | Risco associado |
 | --- | --- |
-| As regras entre telas podem ser demonstradas com dados locais. | Dificuldades para compartilhar os dados e integrar os fluxos podem impedir uma demonstração completa. |
-| O computador e a disponibilidade informada permitem executar o trabalho restante. | Indisponibilidade do equipamento ou do integrante que concentra a implementação pode comprometer o prazo. |
+| As regras entre telas podem ser demonstradas com dados fictícios e o `json-server` local. | Falha na execução do mock ou na integração das telas pode impedir uma demonstração completa. |
+| Os equipamentos e a disponibilidade efetiva permitem cumprir as alocações do plano. | Indisponibilidade de equipamento ou integrante pode comprometer o prazo. |
 | O ambiente de demonstração permite obter localização e verificar o percurso. | Permissão negada ou localização imprecisa pode impedir a validação do registro de tempo. |
 
 ## 10. Critérios de encerramento ou cancelamento
 
-O projeto é encerrado após a entrega dos quatro documentos e do frontend e o registro da avaliação do professor.
+A etapa M1 é concluída após a entrega dos quatro documentos e do frontend e o registro da avaliação do professor. Sem aprovação da extensão M2, o encerramento do projeto se limita a essas entregas.
 
 A inviabilidade técnica que impeça a demonstração ou a indisponibilidade de recursos essenciais, sem alternativa viável dentro do prazo, é motivo para avaliar replanejamento ou cancelamento junto às equipes e ao professor. As alterações de escopo cabem à equipe de desenvolvimento.
 
@@ -128,3 +130,4 @@ Este registro deve ser atualizado quando as validações ocorrerem. A publicaç�
 - Cicla+ — Matrizes de Requisitos: matriz CRUD, perfis e priorização dos casos de uso.
 - Informações de escopo, equipe, recursos e prazos fornecidas pelas equipes.
 - [Business Case do Cicla+](business-case.md).
+- [Plano do Projeto Cicla+](plano-projeto1.md).
