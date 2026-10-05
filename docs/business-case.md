@@ -18,7 +18,7 @@ Concluir o frontend para demonstrar os **15 casos de uso listados e priorizados 
 
 A demonstração de M1 usará **usuários fictícios e dados servidos localmente pelo backend mockado `json-server`**. O mock dá suporte à leitura e à atualização dos dados usados pelo frontend. Backend próprio em Express, persistência em MongoDB, comunicação entre usuários reais e cobrança de serviços ficam fora desta entrega.
 
-A API Express e o MongoDB são uma extensão proposta para M2 no [Plano do Projeto](plano-projeto1.md), condicionada à decisão da equipe de desenvolvimento e à aprovação do patrocinador. O uso do `json-server` em M1 já faz parte da solução atual.
+A API Express e o MongoDB são uma extensão proposta para M2 no [Plano do Projeto](plano-de-projetoV7.md), condicionada à decisão da equipe de desenvolvimento e à aprovação do patrocinador. O uso do `json-server` em M1 já faz parte da solução atual.
 
 ## 3. Valor esperado
 
@@ -65,4 +65,4 @@ O professor realizará a avaliação acadêmica; a equipe de desenvolvimento apr
 - Cicla+ — Matrizes de Requisitos: matriz CRUD, perfis e priorização dos casos de uso.
 - Informações confirmadas de escopo, recursos e prazos fornecidas pelas equipes.
 - [Termo de Abertura do Projeto Cicla+](termo-de-abertura.md).
-- [Plano do Projeto Cicla+](plano-projeto1.md).
+- [Plano do Projeto Cicla+](plano-de-projetoV7.md).
