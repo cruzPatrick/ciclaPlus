@@ -2,13 +2,13 @@
 
 Repositório: https://github.com/cruzPatrick/ciclaPlus
 
-A nota de cada aluno é a parte comum do grupo mais a qualidade individual. Sem autoria efetiva na própria parte, a AV1 fica 0. A parte comum vale 60 pontos: stack da disciplina (30) e escopo funcionando (30). Os 40 restantes avaliam a qualidade do que o próprio aluno fez.
+A nota de cada aluno é a parte comum do grupo mais a qualidade individual. Quem não tem commit no repositório recebe a parte comum do grupo, sem a parte individual. A parte comum vale 60 pontos: stack da disciplina (30) e escopo funcionando (30). Os 40 restantes avaliam a qualidade do que o próprio aluno fez.
 
 | Aluno | Nota |
 | --- | ---: |
 | Patrick Cruz Azevedo | 80 |
-| Gabriel Cabral Almeida de Carvalho | 0 |
-| Hugo Lima de Almeida Antunes Aguiar | 0 |
+| Gabriel Cabral Almeida de Carvalho | 46 |
+| Hugo Lima de Almeida Antunes Aguiar | 46 |
 
 ## Parte comum — 46/60
 
@@ -38,10 +38,10 @@ Descontos na parte individual:
 
 O restante da parte dele está organizado: a API fica em `src/api/`, os hooks separam os dados por conta e atualizam a lista depois da escrita, e os formulários validam com Zod.
 
-## Gabriel Cabral Almeida de Carvalho — 0
+## Gabriel Cabral Almeida de Carvalho — 46
 
-Não há commit, e-mail nem arquivo com o nome dele no repositório. O dicionário atribui a ele o perfil, as atividades e o confronto. Essas telas existem, no histórico de Patrick Cruz Azevedo. Sem commit próprio, a AV1 fica 0.
+Não há commit, e-mail nem arquivo com o nome dele no repositório. O dicionário atribui a ele o perfil, as atividades e o confronto. Essas telas existem, no histórico de Patrick Cruz Azevedo. A nota é a parte comum do grupo, 46 pontos. Sem commit, não há parte individual a avaliar.
 
-## Hugo Lima de Almeida Antunes Aguiar — 0
+## Hugo Lima de Almeida Antunes Aguiar — 46
 
-Não há commit, e-mail nem arquivo com o nome dele no repositório. O dicionário atribui a ele o match, o chat e o ranking. Essas telas existem, no histórico de Patrick Cruz Azevedo. Sem commit próprio, a AV1 fica 0.
+Não há commit, e-mail nem arquivo com o nome dele no repositório. O dicionário atribui a ele o match, o chat e o ranking. Essas telas existem, no histórico de Patrick Cruz Azevedo. A nota é a parte comum do grupo, 46 pontos. Sem commit, não há parte individual a avaliar.
