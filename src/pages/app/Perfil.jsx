@@ -34,9 +34,8 @@ export default function Perfil() {
   }
 
   // Alterna entre os dois perfis que a Matriz Perfil x Funcionalidade prevê
-  // (Ciclista / Equipe). As telas ainda não têm interface diferenciada por
-  // perfil — ver mudancas/backlog.md — mas a troca em si já é real e
-  // persiste no json-server.
+  // (Ciclista / Equipe). A troca persiste no json-server e o AppLayout
+  // refaz o menu (e Treino mostra só a aba de equipe) a partir dela.
   function mudarPerfil() {
     if (!conta) return;
     const novoPerfil = conta.perfil === "equipe" ? "ciclista" : "equipe";

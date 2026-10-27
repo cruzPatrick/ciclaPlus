@@ -6,33 +6,41 @@ import {
   useConfrontos,
   useMarcarConfronto,
   useAtualizarConfronto,
+  useConfirmarResultado,
+  useCancelarConfronto,
 } from "../../hooks/useCiclaData.js";
+import { PONTOS_POR_RESULTADO } from "../../api/ciclaApi.js";
+import { ehMutuo } from "../../utils/match.js";
 
-// Estados do confronto com fluxo de dupla confirmação:
-// pendente_aceite_adversario -> aguarda o outro aceitar
-// pendente_meu_aceite -> aguarda a sua aceitação
-// confirmado -> ambos aceitaram (autorizado para disputar)
-// resultado_registrado -> tempo/resultado enviado
-// encerrado -> confronto concluído
+// Fluxo com confirmação bilateral. Como só existe uma conta logada por vez,
+// os passos que dependem da OUTRA parte têm um botão "Simular: ...".
+//
+// pendente_aceite_adversario -> a outra pessoa precisa aceitar o convite
+// confirmado                 -> ambos aceitaram: já pode registrar o resultado
+// resultado_registrado       -> você registrou; a outra pessoa precisa confirmar
+// resultado_confirmado       -> as duas partes confirmaram (pontua no Ranking)
+// encerrado                  -> confronto concluído
 const STATUS = {
-  pendente_aceite_adversario: { rotulo: "Aguardando adversário", cor: "secondary" },
-  pendente_meu_aceite: { rotulo: "Aguardando seu aceite", cor: "warning" },
-  confirmado: { rotulo: "Confronto Autorizado", cor: "primary" },
-  resultado_registrado: { rotulo: "Resultado registrado", cor: "ciclagrey" },
+  pendente_aceite_adversario: { rotulo: "Aguardando aceite do adversário", cor: "secondary" },
+  confirmado: { rotulo: "Confronto autorizado", cor: "primary" },
+  resultado_registrado: { rotulo: "Aguardando confirmação do resultado", cor: "warning" },
+  resultado_confirmado: { rotulo: "Resultado confirmado", cor: "ciclagrey" },
   encerrado: { rotulo: "Encerrado", cor: "dark" },
 };
 
 const esquemaDesafio = z.object({
-  adversario: z.string().min(1, "Selecione um ciclista que deu match"),
+  adversario: z.string().min(1, "Selecione um ciclista que retribuiu o match"),
 });
 
 export default function Confronto() {
-  // Lista de quem realmente deu match (Dar Match) — antes essa tela tinha
-  // sua própria lista simulada, desligada do match de verdade.
+  // Só quem retribuiu o match pode ser desafiado.
   const { data: matches = [] } = useMatches();
+  const adversarios = matches.filter(ehMutuo);
   const { data: confrontos = [], isLoading, isError } = useConfrontos();
   const marcarMutation = useMarcarConfronto();
   const atualizarMutation = useAtualizarConfronto();
+  const confirmarResultadoMutation = useConfirmarResultado();
+  const cancelarMutation = useCancelarConfronto();
 
   const {
     register,
@@ -46,7 +54,7 @@ export default function Confronto() {
     reset();
   }
 
-  function aceitarDesafio(id) {
+  function simularAceiteDoAdversario(id) {
     atualizarMutation.mutate({ id, dados: { status: "confirmado" } });
   }
 
@@ -54,24 +62,29 @@ export default function Confronto() {
     atualizarMutation.mutate({ id, dados: { status: "resultado_registrado", resultado } });
   }
 
-  function confirmarEncerramento(id) {
+  function simularConfirmacaoDoAdversario(confronto) {
+    confirmarResultadoMutation.mutate({ id: confronto.id, resultado: confronto.resultado });
+  }
+
+  function encerrar(id) {
     atualizarMutation.mutate({ id, dados: { status: "encerrado" } });
   }
 
   return (
     <main className="container py-4 d-flex flex-column align-items-center">
-      <section className="w-100" style={{ maxWidth: "720px" }}>
+      <section className="cicla-coluna">
         <header className="mb-4">
           <h1 className="h3 text-center text-lg-start">Confrontos</h1>
           <p className="text-body-secondary m-0">
-            Marque desafios com os seus matches. Ambas as partes precisam de aceitar para autorizar o confronto!
+            Marque desafios com quem retribuiu seu match. Convite e resultado precisam da
+            confirmação das duas partes; o resultado confirmado pontua no Ranking (vitória{" "}
+            {PONTOS_POR_RESULTADO["Vitória"]}, derrota {PONTOS_POR_RESULTADO["Derrota"]}).
           </p>
         </header>
 
-        {/* Formulário alimentado APENAS pelos ciclistas com quem deu MATCH */}
         <article className="card shadow-sm p-3 mb-4">
           <header className="mb-2">
-            <h2 className="h6 fw-bold m-0">Desafiar um Match</h2>
+            <h2 className="h6 fw-bold m-0">Desafiar um match</h2>
           </header>
           <form className="row g-2" onSubmit={handleSubmit(aoEnviar)} noValidate>
             <section className="col-auto flex-grow-1">
@@ -84,8 +97,8 @@ export default function Confronto() {
                 defaultValue=""
                 {...register("adversario")}
               >
-                <option value="">Selecione um ciclista que deu match...</option>
-                {matches.map((match) => (
+                <option value="">Selecione um ciclista que retribuiu o match...</option>
+                {adversarios.map((match) => (
                   <option key={match.id} value={match.nome}>
                     {match.nome}
                   </option>
@@ -94,19 +107,18 @@ export default function Confronto() {
               {errors.adversario && (
                 <p className="invalid-feedback d-block small mb-0">{errors.adversario.message}</p>
               )}
-              {matches.length === 0 && (
-                <p className="form-text m-0">Você ainda não deu match com ninguém.</p>
+              {adversarios.length === 0 && (
+                <p className="form-text m-0">Ninguém retribuiu seu match ainda.</p>
               )}
             </section>
             <section className="col-auto">
               <button type="submit" className="btn btn-primary w-100" disabled={isSubmitting}>
-                Enviar Desafio
+                Enviar desafio
               </button>
             </section>
           </form>
         </article>
 
-        {/* Lista dos Confrontos */}
         {isLoading && <p className="text-body-secondary">Carregando confrontos...</p>}
         {isError && (
           <aside className="bg-light border border-danger text-danger rounded p-2 small">
@@ -115,71 +127,92 @@ export default function Confronto() {
         )}
 
         <section className="d-flex flex-column gap-3">
-          {confrontos.map((confronto) => (
-            <article
-              key={confronto.id}
-              className="card shadow-sm p-3 d-flex flex-row flex-wrap align-items-center justify-content-between gap-2"
-            >
-              <section>
-                <header>
-                  <h2 className="h6 fw-bold m-0 d-inline-block me-2">
-                    vs. {confronto.adversario}
-                  </h2>
-                  <span className={`badge bg-${STATUS[confronto.status].cor}`}>
-                    {STATUS[confronto.status].rotulo}
-                  </span>
-                </header>
-                {confronto.resultado && (
-                  <p className="small text-body-secondary m-0 mt-1">
-                    Resultado: {confronto.resultado}
-                  </p>
-                )}
-              </section>
+          {confrontos.map((confronto) => {
+            const status = STATUS[confronto.status] ?? STATUS.pendente_aceite_adversario;
+            return (
+              <article
+                key={confronto.id}
+                className="card shadow-sm p-3 d-flex flex-row flex-wrap align-items-center justify-content-between gap-2"
+              >
+                <section>
+                  <header>
+                    <h2 className="h6 fw-bold m-0 d-inline-block me-2">
+                      vs. {confronto.adversario}
+                    </h2>
+                    <span className={`badge bg-${status.cor}`}>{status.rotulo}</span>
+                  </header>
+                  {confronto.resultado && (
+                    <p className="small text-body-secondary m-0 mt-1">
+                      Resultado: {confronto.resultado}
+                    </p>
+                  )}
+                </section>
 
-              <nav className="d-flex gap-2">
-                {/* Se o adversário me desafiou, exibe o botão para eu aceitar */}
-                {confronto.status === "pendente_meu_aceite" && (
-                  <button
-                    type="button"
-                    className="btn btn-success btn-sm"
-                    onClick={() => aceitarDesafio(confronto.id)}
-                  >
-                    Aceitar Confronto
-                  </button>
-                )}
+                <nav className="d-flex flex-wrap gap-2">
+                  {confronto.status === "pendente_aceite_adversario" && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-success btn-sm"
+                      onClick={() => simularAceiteDoAdversario(confronto.id)}
+                    >
+                      Simular: adversário aceitou
+                    </button>
+                  )}
 
-                {/* Apenas quando AMBOS aceitam (status: confirmado) permite registar o resultado */}
-                {confronto.status === "confirmado" && (
-                  <>
+                  {confronto.status === "confirmado" && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm"
+                        onClick={() => registrarResultado(confronto.id, "Vitória")}
+                      >
+                        Vitória
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => registrarResultado(confronto.id, "Derrota")}
+                      >
+                        Derrota
+                      </button>
+                    </>
+                  )}
+
+                  {confronto.status === "resultado_registrado" && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-success btn-sm"
+                      disabled={confirmarResultadoMutation.isPending}
+                      onClick={() => simularConfirmacaoDoAdversario(confronto)}
+                    >
+                      Simular: adversário confirmou o resultado
+                    </button>
+                  )}
+
+                  {confronto.status === "resultado_confirmado" && (
                     <button
                       type="button"
                       className="btn btn-outline-primary btn-sm"
-                      onClick={() => registrarResultado(confronto.id, "Vitória")}
+                      onClick={() => encerrar(confronto.id)}
                     >
-                      Vitória
+                      Encerrar
                     </button>
+                  )}
+
+                  {(confronto.status === "pendente_aceite_adversario" ||
+                    confronto.status === "confirmado") && (
                     <button
                       type="button"
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => registrarResultado(confronto.id, "Derrota")}
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => cancelarMutation.mutate(confronto.id)}
                     >
-                      Derrota
+                      Cancelar
                     </button>
-                  </>
-                )}
-
-                {confronto.status === "resultado_registrado" && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm"
-                    onClick={() => confirmarEncerramento(confronto.id)}
-                  >
-                    Encerrar
-                  </button>
-                )}
-              </nav>
-            </article>
-          ))}
+                  )}
+                </nav>
+              </article>
+            );
+          })}
         </section>
       </section>
     </main>

@@ -1,7 +1,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useConsultorias, useSolicitarConsultoria } from "../../hooks/useCiclaData.js";
+import {
+  useConsultorias,
+  useSolicitarConsultoria,
+  useCancelarConsultoria,
+} from "../../hooks/useCiclaData.js";
 
 // Especialistas disponíveis pra consultoria — opção de referência, não é
 // uma entidade com CRUD próprio (diferente de confrontos, tempos etc.).
@@ -26,6 +30,7 @@ const esquemaConsultoria = z.object({
 export default function Consultoria() {
   const { data: consultorias = [], isLoading, isError } = useConsultorias();
   const solicitarMutation = useSolicitarConsultoria();
+  const cancelarMutation = useCancelarConsultoria();
 
   const {
     register,
@@ -132,6 +137,17 @@ export default function Consultoria() {
                 </header>
                 <p className="small text-body-secondary m-0">{consultoria.assunto}</p>
                 <p className="small text-body-secondary m-0">Data desejada: {consultoria.data}</p>
+                {consultoria.status === "pendente" && (
+                  <footer className="mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => cancelarMutation.mutate(consultoria.id)}
+                    >
+                      Cancelar solicitação
+                    </button>
+                  </footer>
+                )}
               </article>
             ))}
           </section>

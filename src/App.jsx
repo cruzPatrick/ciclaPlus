@@ -12,6 +12,8 @@ import Confronto from "./pages/app/Confronto.jsx";
 import Consultoria from "./pages/app/Consultoria.jsx";
 import Ranking from "./pages/app/Ranking.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
+import Passeios from "./pages/app/Passeios.jsx";
+import Boost from "./pages/app/Boost.jsx";
 
 export default function App() {
   return (
@@ -24,6 +26,8 @@ export default function App() {
         <Route index element={<Navigate to="descoberta" replace />} />
         <Route path="descoberta" element={<Descoberta />} />
         <Route path="chat" element={<Chat />} />
+        <Route path="passeios" element={<Passeios />} />
+        <Route path="boost" element={<Boost />} />
         <Route path="treino" element={<Treino />} />
         {/* Rotas antigas: redirecionam pra página única com o tipo certo. */}
         <Route

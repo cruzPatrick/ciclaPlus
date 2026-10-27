@@ -5,6 +5,8 @@ import {
   matchesApi,
   mensagensApi,
   treinosApi,
+  passeiosApi,
+  percursosApi,
   temposApi,
   confrontosApi,
   consultoriasApi,
@@ -34,6 +36,7 @@ export function usePerfilUsuario(usuarioId) {
   });
 }
 
+// Também é o caminho do Boost: ativar/desativar é só um PATCH em `boostAte`.
 export function useAtualizarPerfil(usuarioId) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -66,8 +69,9 @@ export function useMatches() {
 }
 
 // Uma avaliação (match ou passar) sempre tira a pessoa do pool de
-// candidatos; se foi match, ela também entra na lista real de matches —
-// é o único caminho que alimenta o Chat e o Confronto.
+// candidatos; se foi match, ela também entra na lista de matches — mas com
+// `mutuo: false`: só vira recíproco quando a outra pessoa retribui
+// (useRetribuirMatch). Chat e treino individual exigem o match recíproco.
 export function useAvaliarCandidato() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -77,6 +81,7 @@ export function useAvaliarCandidato() {
           id: candidato.id,
           nome: candidato.nome,
           distanciaKm: candidato.distanciaKm,
+          mutuo: false,
           usuarioId: usuarioLogadoId(),
         });
       }
@@ -86,6 +91,16 @@ export function useAvaliarCandidato() {
       queryClient.invalidateQueries({ queryKey: ["candidatos"] });
       queryClient.invalidateQueries({ queryKey: ["matches"] });
     },
+  });
+}
+
+// Simula a outra pessoa retribuindo o match (só existe uma conta logada por
+// vez no mock, então a "outra parte" é acionada por um botão de simulação).
+export function useRetribuirMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (matchId) => matchesApi.atualizar(matchId, { mutuo: true }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["matches"] }),
   });
 }
 
@@ -139,7 +154,50 @@ export function useAlternarTreinoFeito() {
   });
 }
 
-// ===== Tempos (só o Cronômetro guiado pelo mapa escreve aqui) =============
+export function useExcluirTreino() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => treinosApi.remover(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["treinos"] }),
+  });
+}
+
+// ===== Passeios (CRUD completo) =============================================
+
+export function usePasseios() {
+  const usuarioId = usuarioLogadoId();
+  return useQuery({
+    queryKey: ["passeios", usuarioId],
+    queryFn: () => passeiosApi.listarPorUsuario(usuarioId),
+    enabled: usuarioId != null,
+  });
+}
+
+// Cria quando não há `id`; edita quando há.
+export function useSalvarPasseio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dados }) =>
+      id
+        ? passeiosApi.atualizar(id, dados)
+        : passeiosApi.criar({ ...dados, usuarioId: usuarioLogadoId() }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["passeios"] }),
+  });
+}
+
+export function useExcluirPasseio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => passeiosApi.remover(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["passeios"] }),
+  });
+}
+
+// ===== Percursos e Tempos ===================================================
+
+export function usePercursos() {
+  return useQuery({ queryKey: ["percursos"], queryFn: percursosApi.listar });
+}
 
 export function useTempos() {
   const usuarioId = usuarioLogadoId();
@@ -150,11 +208,36 @@ export function useTempos() {
   });
 }
 
+// Registrar um tempo de um percurso conhecido também atualiza a tabela de
+// "melhores tempos por percurso" do Ranking.
 export function useAdicionarTempo() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (tempo) =>
-      temposApi.adicionar({ ...tempo, usuarioId: usuarioLogadoId() }),
+    mutationFn: async (tempo) => {
+      const usuarioId = usuarioLogadoId();
+      const salvo = await temposApi.adicionar({ ...tempo, usuarioId });
+      if (tempo.percursoId) {
+        const usuario = await usuariosApi.buscarPorId(usuarioId);
+        await rankingApi.registrarTempo({
+          percurso: tempo.nome,
+          ciclista: usuario.nome,
+          tempo: tempo.tempo,
+          distanciaKm: tempo.distanciaKm,
+        });
+      }
+      return salvo;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tempos"] });
+      queryClient.invalidateQueries({ queryKey: ["melhoresTemposPorPercurso"] });
+    },
+  });
+}
+
+export function useAtualizarTempo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dados }) => temposApi.atualizar(id, dados),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tempos"] }),
   });
 }
@@ -168,6 +251,9 @@ export function useExcluirTempo() {
 }
 
 // ===== Confronto =============================================================
+// Fluxo (cada seta que depende da outra parte é simulada por um botão):
+// pendente_aceite_adversario -> confirmado -> resultado_registrado ->
+// resultado_confirmado (pontua no Ranking) -> encerrado
 
 export function useConfrontos() {
   const usuarioId = usuarioLogadoId();
@@ -200,6 +286,29 @@ export function useAtualizarConfronto() {
   });
 }
 
+// O resultado só pontua depois da confirmação da outra parte.
+export function useConfirmarResultado() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, resultado }) => {
+      await confrontosApi.atualizar(id, { status: "resultado_confirmado" });
+      await rankingApi.registrarResultado({ usuarioId: usuarioLogadoId(), resultado });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["confrontos"] });
+      queryClient.invalidateQueries({ queryKey: ["ranking"] });
+    },
+  });
+}
+
+export function useCancelarConfronto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => confrontosApi.remover(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["confrontos"] }),
+  });
+}
+
 // ===== Consultoria ============================================================
 
 export function useConsultorias() {
@@ -224,7 +333,15 @@ export function useSolicitarConsultoria() {
   });
 }
 
-// ===== Ranking (somente leitura) ============================================
+export function useCancelarConsultoria() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => consultoriasApi.remover(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["consultorias"] }),
+  });
+}
+
+// ===== Ranking (somente leitura na tela; escrito por confronto e tempo) =====
 
 export function useRankingGeral() {
   return useQuery({ queryKey: ["ranking"], queryFn: rankingApi.geral });

@@ -7,7 +7,8 @@
       "senha": "123456",
       "telefone": "(21) 99999-0000",
       "dataNascimento": "1998-04-12",
-      "perfil": "ciclista"
+      "perfil": "ciclista",
+      "boostAte": "2026-11-03T14:48:20.306Z"
     },
     {
       "nome": "astorias",
@@ -20,27 +21,6 @@
     }
   ],
   "candidatos": [
-    {
-      "nome": "Pedro Lima",
-      "tipo": "Estrada",
-      "distanciaKm": 4.7,
-      "usuarioId": "1",
-      "id": "aNez7ZNIR8I"
-    },
-    {
-      "nome": "Júlia Souza",
-      "tipo": "Mountain bike",
-      "distanciaKm": 2.3,
-      "usuarioId": "1",
-      "id": "RTHXzV9ZK7E"
-    },
-    {
-      "nome": "Rafael Nunes",
-      "tipo": "Urbano",
-      "distanciaKm": 6.1,
-      "usuarioId": "1",
-      "id": "_B0ZcIMxOtA"
-    },
     {
       "nome": "Caio Mendes",
       "tipo": "Urbano",
@@ -87,6 +67,20 @@
       "nome": "Elisa Martins",
       "distanciaKm": 2.7,
       "usuarioId": "1"
+    },
+    {
+      "id": "h6Cdfj0AaJs",
+      "nome": "Júlia Souza",
+      "distanciaKm": 2.3,
+      "mutuo": true,
+      "usuarioId": "1"
+    },
+    {
+      "id": "xqNJfby69-0",
+      "nome": "Pedro Lima",
+      "distanciaKm": 4.7,
+      "mutuo": true,
+      "usuarioId": "1"
     }
   ],
   "mensagens": [
@@ -118,6 +112,16 @@
       "equipe": null,
       "feito": false,
       "usuarioId": "1"
+    },
+    {
+      "parceiro": "Ana Beatriz",
+      "data": "2026-10-04",
+      "hora": "15:47",
+      "tipo": "individual",
+      "equipe": null,
+      "feito": false,
+      "usuarioId": "1",
+      "id": "U0aycKsPl3A"
     }
   ],
   "equipes": [
@@ -164,22 +168,15 @@
     {
       "id": "1",
       "adversario": "Ana Beatriz",
-      "status": "resultado_registrado",
+      "status": "encerrado",
       "resultado": "Vitória",
       "usuarioId": "1"
     },
     {
       "id": "2",
       "adversario": "Bruno Costa",
-      "status": "resultado_registrado",
+      "status": "encerrado",
       "resultado": "Vitória",
-      "usuarioId": "1"
-    },
-    {
-      "adversario": "Elisa Martins",
-      "status": "pendente_aceite_adversario",
-      "resultado": null,
-      "id": "cOGzB3UqXZs",
       "usuarioId": "1"
     }
   ],
@@ -190,14 +187,6 @@
       "assunto": "Melhorar cadência em subidas",
       "data": "2026-10-05",
       "status": "pendente",
-      "usuarioId": "1"
-    },
-    {
-      "especialista": "Treinador Marcos Lima",
-      "assunto": "melhorar velocidade",
-      "data": "2026-10-21",
-      "status": "pendente",
-      "id": "RhwlAZSj4Mw",
       "usuarioId": "1"
     }
   ],
@@ -219,6 +208,13 @@
       "nome": "Carlos Santos",
       "pontuacao": 1350,
       "melhorTempo": "00:48:20"
+    },
+    {
+      "nome": "Usuário Teste",
+      "pontuacao": 200,
+      "melhorTempo": "00:12:05",
+      "usuarioId": "1",
+      "id": "e4HTCyYV3ZY"
     }
   ],
   "melhoresTemposPorPercurso": [

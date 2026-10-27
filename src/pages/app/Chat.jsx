@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMatches, useMensagens, useEnviarMensagem } from "../../hooks/useCiclaData.js";
+import { ehMutuo } from "../../utils/match.js";
 
 // Um item da lista de conversas — mesmo componente usado na lista mobile
 // (tela cheia) e na lista lateral do desktop.
@@ -17,11 +18,11 @@ function ItemConversa({ conversa, ativa, onSelecionar }) {
         }
         onClick={() => onSelecionar(conversa.id)}
       >
-        <span className="material-icons">account_circle</span>
+        <span className="material-icons">{ehMutuo(conversa) ? "account_circle" : "lock"}</span>
         <span>
           <span className="d-block">{conversa.nome}</span>
-          <span className="d-block small" style={{ opacity: 0.75 }}>
-            {conversa.distanciaKm} km
+          <span className="d-block small opacity-75">
+            {ehMutuo(conversa) ? `${conversa.distanciaKm} km` : "Aguardando retribuição"}
           </span>
         </span>
       </button>
@@ -45,14 +46,19 @@ function ThreadConversa({ conversa }) {
     formState: { errors },
   } = useForm({ resolver: zodResolver(esquemaMensagem), defaultValues: { texto: "" } });
 
+  const liberada = ehMutuo(conversa);
+
   function aoEnviar(dados) {
+    // Defesa dupla: mesmo se o campo for habilitado pelo DevTools, o envio
+    // sem match recíproco não acontece.
+    if (!liberada) return;
     enviarMutation.mutate(dados.texto.trim());
     reset();
   }
 
   return (
     <>
-      <section className="border rounded p-3 mb-2" style={{ minHeight: "220px" }}>
+      <section className="cicla-thread border rounded p-3 mb-2">
         {isLoading && <p className="text-body-secondary small m-0">Carregando conversa...</p>}
         {mensagens.map((mensagem) => (
           <p key={mensagem.id} className={"mb-2 " + (mensagem.autor === "Você" ? "text-end" : "")}>
@@ -68,16 +74,24 @@ function ThreadConversa({ conversa }) {
         ))}
       </section>
 
+      {!liberada && (
+        <aside className="bg-light border border-warning text-warning-emphasis rounded p-2 small mb-2">
+          O chat com {conversa.nome} só abre quando essa pessoa também der match em você. Vá em{" "}
+          <strong>Dar Match</strong> e use "Aguardando retribuição" pra simular a resposta.
+        </aside>
+      )}
+
       <form className="d-flex gap-2" onSubmit={handleSubmit(aoEnviar)} noValidate>
         <section className="flex-grow-1">
           <input
             type="text"
             className={"form-control" + (errors.texto ? " is-invalid" : "")}
             placeholder={`Mensagem para ${conversa.nome}`}
+            disabled={!liberada}
             {...register("texto")}
           />
         </section>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary" disabled={!liberada}>
           Enviar
         </button>
       </form>

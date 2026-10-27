@@ -1,6 +1,7 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./client.js";
+import { normalizarTempo, paraSegundos } from "../utils/tempo.js";
 
-// --- Usuários (login / cadastro / perfil) -----------------------------
+// --- Usuários (login / cadastro / perfil / boost) ----------------------
 export const usuariosApi = {
   // Filtra no JS, não via querystring: o motor de filtro por múltiplos
   // parâmetros do json-server@1 (beta) se mostrou instável em teste local
@@ -41,9 +42,11 @@ export const candidatosApi = {
 };
 
 // --- Matches -------------------------------------------------------------
+// `mutuo: false` = você deu match e a outra pessoa ainda não retribuiu.
 export const matchesApi = {
   listarPorUsuario: (usuarioId) => porConta("/matches", usuarioId),
   adicionar: (match) => apiPost("/matches", match),
+  atualizar: (id, dados) => apiPatch(`/matches/${id}`, dados),
 };
 
 // --- Mensagens (Chat, por match) -----------------------------------------
@@ -65,12 +68,27 @@ export const treinosApi = {
   equipes: () => apiGet("/equipes"),
   marcar: (treino) => apiPost("/treinos", treino),
   atualizar: (id, dados) => apiPatch(`/treinos/${id}`, dados),
+  remover: (id) => apiDelete(`/treinos/${id}`),
 };
 
-// --- Tempos (só preenchido pelo Cronômetro guiado pelo mapa) -------------
+// --- Passeios (Manter Passeio: CRUD completo) -------------------------------
+export const passeiosApi = {
+  listarPorUsuario: (usuarioId) => porConta("/passeios", usuarioId),
+  criar: (passeio) => apiPost("/passeios", passeio),
+  atualizar: (id, dados) => apiPatch(`/passeios/${id}`, dados),
+  remover: (id) => apiDelete(`/passeios/${id}`),
+};
+
+// --- Percursos (diretório compartilhado, usado pra verificar o tempo) -------
+export const percursosApi = {
+  listar: () => apiGet("/percursos"),
+};
+
+// --- Tempos (Cronômetro simulado ou GPS) -----------------------------------
 export const temposApi = {
   listarPorUsuario: (usuarioId) => porConta("/tempos", usuarioId),
   adicionar: (tempo) => apiPost("/tempos", tempo),
+  atualizar: (id, dados) => apiPatch(`/tempos/${id}`, dados),
   remover: (id) => apiDelete(`/tempos/${id}`),
 };
 
@@ -79,16 +97,67 @@ export const confrontosApi = {
   listarPorUsuario: (usuarioId) => porConta("/confrontos", usuarioId),
   marcar: (confronto) => apiPost("/confrontos", confronto),
   atualizar: (id, dados) => apiPatch(`/confrontos/${id}`, dados),
+  remover: (id) => apiDelete(`/confrontos/${id}`),
 };
 
 // --- Consultoria -----------------------------------------------------------
 export const consultoriasApi = {
   listarPorUsuario: (usuarioId) => porConta("/consultorias", usuarioId),
   solicitar: (consultoria) => apiPost("/consultorias", consultoria),
+  remover: (id) => apiDelete(`/consultorias/${id}`),
 };
 
-// --- Ranking (somente leitura — é derivado dos resultados do sistema) ----
+// --- Ranking ---------------------------------------------------------------
+// Regra fixa da demonstração (documentada na tela de Ranking): só entra
+// pontuação depois que o resultado do confronto foi confirmado pelas DUAS
+// partes. Vitória vale 100 pontos; derrota, 25 (participação).
+export const PONTOS_POR_RESULTADO = { Vitória: 100, Derrota: 25 };
+
 export const rankingApi = {
   geral: () => apiGet("/ranking"),
   melhoresTemposPorPercurso: () => apiGet("/melhoresTemposPorPercurso"),
+
+  // Soma os pontos do resultado confirmado à linha da pessoa logada (cria a
+  // linha se ainda não existir) e atualiza o melhor tempo dela.
+  async registrarResultado({ usuarioId, resultado }) {
+    const [ranking, usuario, tempos] = await Promise.all([
+      apiGet("/ranking"),
+      usuariosApi.buscarPorId(usuarioId),
+      porConta("/tempos", usuarioId),
+    ]);
+    const pontos = PONTOS_POR_RESULTADO[resultado] ?? 0;
+    const melhorTempo =
+      tempos.map((t) => normalizarTempo(t.tempo)).sort()[0] ?? null;
+    const linha = ranking.find((r) => String(r.usuarioId) === String(usuarioId));
+
+    if (linha) {
+      return apiPatch(`/ranking/${linha.id}`, {
+        nome: usuario.nome,
+        pontuacao: linha.pontuacao + pontos,
+        melhorTempo: melhorTempo ?? linha.melhorTempo,
+      });
+    }
+    return apiPost("/ranking", {
+      nome: usuario.nome,
+      pontuacao: pontos,
+      melhorTempo: melhorTempo ?? "--:--:--",
+      usuarioId: String(usuarioId),
+    });
+  },
+
+  // Mantém "melhores tempos por percurso" coerente com os tempos reais
+  // registrados: só grava se for o primeiro tempo da pessoa naquele percurso
+  // ou se for melhor que o que já estava lá.
+  async registrarTempo({ percurso, ciclista, tempo, distanciaKm }) {
+    const tabela = await apiGet("/melhoresTemposPorPercurso");
+    const atual = tabela.find((r) => r.percurso === percurso && r.ciclista === ciclista);
+    const novo = normalizarTempo(tempo);
+    if (!atual) {
+      return apiPost("/melhoresTemposPorPercurso", { percurso, ciclista, tempo: novo, distanciaKm });
+    }
+    if (paraSegundos(novo) < paraSegundos(atual.tempo)) {
+      return apiPatch(`/melhoresTemposPorPercurso/${atual.id}`, { tempo: novo });
+    }
+    return atual;
+  },
 };

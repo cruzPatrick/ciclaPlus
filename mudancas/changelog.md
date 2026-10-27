@@ -1290,3 +1290,87 @@ Pedido do Patrick na mesma data ("resolva esses problemas"): o padrão de
   **14/14 PASS, zero erros de console** — conta 1 vê fila/treino/tempo/
   confronto/consultoria dela e nada da conta 2, e vice-versa. Rodada
   fechada com **31/31**.
+
+---
+
+## 2026-10-26 — Correções da nota do professor: regras bilaterais, Boost, Passeios, Cronômetro simulado, Ranking vivo e menu por perfil
+
+### Contexto da rodada
+
+O professor devolveu a avaliação (parte comum 46/60, Patrick 80). Os
+descontos do escopo (16/30) apontavam o que faltava nos seis pacotes do
+marco 1 do dicionário da EAP; os descontos individuais, a documentação
+desatualizada e um estilo inline no Chat. Decisões do Patrick nesta rodada:
+Cronômetro **simulado como padrão + GPS opcional**; a "outra parte" do match
+e do confronto é **simulada por botões**.
+
+> Obs.: a rodada de 2026-10-05 (pasta `docs/`: Business Case, Termo de
+> Abertura, Plano V7 e Dicionário da EAP) não foi registrada aqui na época.
+
+### O que mudou, por ponto da nota
+
+| Ponto da nota | O que foi feito |
+|---|---|
+| **Perfil** (menu não mudava) | `AppLayout` filtra `ITENS` por perfil (campo `perfis`). Equipe não vê Dar Match/Chat/Confrontos; Treino só mostra a aba de equipe; rota proibida redireciona. |
+| **Match/chat** (sem match da outra pessoa) | Match nasce `mutuo: false`; "Simular: X retribuiu" em Dar Match (seção "Aguardando retribuição"). Chat bloqueia envio (campo e botão desabilitados + aviso) sem match recíproco. |
+| **Boost** (não existia) | Nova página `/app/boost`: ativa/desliga (`boostAte` no usuário, form RHF+zod de duração) e mostra como os outros te veem. Candidatos com `boost` aparecem primeiro na fila do Dar Match, com selo "Destaque". Sem cobrança. |
+| **Passeio** (não existia) | Nova página `/app/passeios` com CRUD completo (criar, listar, editar, excluir), coleção `passeios` por conta. |
+| **Treino individual sem match** | Formulário exige "Parceiro de treino", só com matches recíprocos (`parceiro` gravado). Tabela ganhou coluna "Com" e botão excluir. |
+| **Confronto sem confirmação bilateral** | Novo fluxo `pendente_aceite_adversario → confirmado → resultado_registrado → resultado_confirmado → encerrado`; passos da outra parte simulados. Só desafia match recíproco. Cancelar enquanto pendente/confirmado. Removido o status `pendente_meu_aceite` (inalcançável). |
+| **Tempo com GPS / sem edição** | `/app/mapa` virou duas abas (`?modo=`): **Simulado** (padrão: escolhe percurso + informa tempo ou usa relógio; compara "percurso selecionado" × "percorrido" e recusa se divergirem) e **GPS (opcional)** (código antigo em `MapaGps.jsx`, carregado com `React.lazy`). Percurso virou entidade (`percursos` no `db.json`). Tempos ganhou **editar** (RHF+zod). |
+| **Ranking sem recalcular** | `rankingApi.registrarResultado` soma pontos ao confirmar o resultado (vitória 100, derrota 25) e atualiza o melhor tempo. `registrarTempo` mantém "melhores tempos por percurso". Tela ordena por pontuação. |
+| **Desconto: soul.md desatualizado** | `mudancas/soul.md` reescrito nas seções de estado, login, cadastro, rotas, LGPD; novas regras 11–15. README atualizado (rotas, regras entre telas, estrutura). |
+| **Desconto: estilo inline no Chat** | `style={{ opacity }}` → `opacity-75`; `minHeight` → classe `.cicla-thread`. Classes `.cicla-coluna`, `.cicla-busca`, `.cicla-avatar` substituem inline em Confronto/Tempos/Mapa/Boost. |
+
+Extras no caminho: `consultorias` ganhou "Cancelar solicitação"; cor do
+Leaflet agora vem de `--bs-primary` (regra 2 do soul.md); backlog
+"Mapa × Cronômetro" resolvido (nome canônico: **Cronômetro**); o chunk do
+Leaflet saiu do bundle principal.
+
+### Arquivos
+
+Novos: `src/pages/app/{Passeios,Boost,CronometroSimulado,MapaGps}.jsx`,
+`src/utils/{tempo,match}.js`. Alterados: `db.json` (coleções `passeios` e
+`percursos`; campos `mutuo`, `boost`, `parceiro`, `percursoId`, `origem`),
+`src/api/ciclaApi.js`, `src/hooks/useCiclaData.js`, `App.jsx`,
+`AppLayout.jsx`, `Descoberta`, `Chat`, `Treino`, `Confronto`, `Consultoria`,
+`Mapa`, `Tempos`, `Ranking`, `Perfil` (comentário), `custom.scss`,
+`mudancas/soul.md`, `README.md`.
+
+### Como verificar
+
+1. `npm run mock` + `npm run dev`; login `teste@ciclaplus.com` / `123456`.
+2. Dar Match → dar match em alguém → Chat mostra 🔒 e campo desabilitado →
+   voltar e usar "Simular: ... retribuiu" → Chat libera.
+3. Confrontos: desafiar → simular aceite → Vitória → simular confirmação →
+   Ranking ganhou +100 para "Usuário Teste".
+4. Cronômetro: percurso selecionado ≠ percorrido → mensagem de divergência;
+   iguais → tempo aparece em Gerenciar Tempos (editável) e em "melhores
+   tempos por percurso".
+5. Perfil → "virar Equipe": menu perde Dar Match/Chat/Confrontos.
+
+### Verificação feita nesta rodada
+
+- `npm run lint` (oxlint): **0 warnings / 0 errors** (um warning de
+  `react(purity)` em `Boost.jsx` foi corrigido movendo `Date.now()` pra fora
+  do componente).
+- `npm run build`: **ok**.
+- **17 checks automatizados** das regras de dados contra um json-server real
+  (cópia do `db.json`): match não recíproco → recíproco; resultado sem
+  confirmação **não** pontua; confirmado soma 100/25 e acumula na mesma
+  linha; melhor tempo normaliza e não é sobrescrito por tempo pior; editar
+  tempo; CRUD de passeio e isolamento por conta; boost; treino com parceiro.
+  **17/17 PASS.**
+- **Não verificado:** as telas rodando num navegador (sem navegador neste
+  ambiente). Conferir visualmente os fluxos acima antes de entregar.
+
+### Fora desta rodada
+
+Ainda não existem: Excluir Ciclista, CRUD de Equipe, tela dedicada de
+consulta de confrontos além da lista atual, e um segundo usuário real
+respondendo (hoje simulado por botão).
+
+### Tempo de trabalho
+
+Uns **50 minutos** de rodada (revisão das mudanças, correções, alinhamento
+dos docs e commit em `main`).

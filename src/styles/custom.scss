@@ -92,6 +92,27 @@ $theme-colors: map-merge(
   padding-left: 2.5rem;
 }
 
+// Chat — área de mensagens com altura mínima (substitui o style inline).
+.cicla-thread {
+  min-height: 220px;
+}
+
+// Coluna central de leitura (Confrontos, Tempos, Cronômetro) e avatar do
+// Boost — evitam style inline nessas telas.
+.cicla-coluna {
+  width: 100%;
+  max-width: 720px;
+}
+
+.cicla-busca {
+  max-width: 420px;
+}
+
+.cicla-avatar {
+  width: 72px;
+  height: 72px;
+}
+
 // --------------------------------------------------------------------------
 // Perfil — card que espelha o auth-card do login (mesma foto no topo),
 // só que com o conteúdo das opções da conta.

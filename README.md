@@ -27,9 +27,12 @@ Login de teste: `teste@ciclaplus.com` / `123456` (dado inicial em
 - `/login`, `/cadastro` — autenticação, contra o backend mockado.
 - `/app/*` → `AppLayout.jsx` (menu fixo, exige sessão) + uma página
   própria por rota, em vez de sections empilhadas com âncora:
-  `/app/descoberta`, `/app/chat`, `/app/treino-individual`,
-  `/app/treino-equipe`, `/app/cronometro`, `/app/tempos`,
-  `/app/confronto`, `/app/consultoria`, `/app/ranking`, `/app/perfil`.
+  `/app/descoberta`, `/app/chat`, `/app/passeios`, `/app/treino`,
+  `/app/mapa`, `/app/tempos`, `/app/confronto`, `/app/consultoria`,
+  `/app/ranking`, `/app/boost`, `/app/perfil`. O menu muda conforme o
+  perfil (Ciclista vê tudo; Equipe não vê Dar Match/Chat/Confrontos).
+  Rotas antigas (`treino-individual`, `treino-equipe`, `cronometro`)
+  continuam como redirect.
 
 Login e Cadastro autenticam/criam conta de verdade contra o json-server
 e guardam a sessão (`usuarioId`) em `localStorage`.
@@ -73,6 +76,7 @@ e guardam a sessão (`usuarioId`) em `localStorage`.
 src/
   api/                  -> client.js (fetch wrapper), ciclaApi.js (funções por recurso), sessao.js
   hooks/useCiclaData.js  -> hooks do Tanstack Query (useQuery/useMutation por recurso)
+  utils/                 -> tempo.js, match.js (regras compartilhadas entre telas)
   pages/
     Landing.jsx        -> página pública
     Login.jsx, Cadastro.jsx

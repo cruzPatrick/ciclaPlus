@@ -10,10 +10,17 @@ IA) deve ler este arquivo primeiro.*
 dão match, conversam por chat, marcam treinos (individual/em equipe),
 cronometram percursos com mapa, disputam confrontos e acompanham rankings.
 
-- **Perfis de usuário:** Ciclista e Equipe.
-- **Estado atual:** protótipo front-end **sem backend** — todo dado exibido é
-  variável local dentro do componente. Nada persiste.
-- **Login de teste fixo:** `teste@ciclaplus.com` / `123456`.
+- **Perfis de usuário:** Ciclista e Equipe — o menu e algumas telas mudam
+  conforme o perfil (ver "Estrutura de rotas").
+- **Estado atual:** front-end integrado a um **backend mockado
+  (json-server)**: tudo que as telas mostram vem de `db.json` e é gravado
+  de volta (match, chat, treino, passeio, tempo, confronto, consultoria,
+  boost, ranking). Cadastro cria usuário de verdade no mock.
+- **Conta de teste (dado inicial do `db.json`):** `teste@ciclaplus.com` /
+  `123456`. Login e cadastro validam contra o mock.
+- **Só há uma conta logada por vez:** tudo que depende da *outra parte*
+  (retribuir match, aceitar convite de confronto, confirmar resultado) é
+  simulado por botões "Simular: ...".
 
 ## Stack
 
@@ -24,7 +31,7 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
 | Dados | Tanstack Query (`@tanstack/react-query`) + json-server (`db.json`, porta 3001) — ver `src/api/` e `src/hooks/useCiclaData.js` |
 | Formulários | react-hook-form + zod (`@hookform/resolvers/zod`) em todo formulário da aplicação |
 | Estilo | Bootstrap 5 via **import parcial do Sass** + paleta Cicla nas variáveis |
-| Mapa | Leaflet 1.9 + tiles OpenStreetMap (sem chave de API) |
+| Mapa (GPS opcional) | Leaflet 1.9 + tiles OpenStreetMap, carregado só na aba GPS (`React.lazy`) |
 | Lint | oxlint (`npm run lint`) |
 | Deploy | GitHub Pages via Actions, **só manual** (`workflow_dispatch`) |
 
@@ -42,8 +49,10 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
 2. **Cores só via variáveis do Bootstrap** (paleta em `custom.scss`): não
    escrever cor hard-coded em CSS/JS — `$primary`/`$secondary`/`.bg-ciclagrey`
    já nascem certos. CSS custom só onde o Bootstrap não cobre.
-3. **LGPD:** localização fica só em memória, nunca persistida nem enviada;
-   sempre pedir consentimento explícito antes do prompt nativo.
+3. **LGPD:** o modo GPS do Cronômetro é opcional; a localização fica só em
+   memória, nunca persistida nem enviada (só o tempo e a distância finais
+   são gravados); sempre pedir consentimento explícito antes do prompt
+   nativo. O modo padrão do Cronômetro é o **simulado**, sem GPS.
 4. **Deploy é manual:** push em `main` **não** publica. Publicar só via
    Actions → *Deploy to GitHub Pages* → *Run workflow*.
 5. **Rotas antigas nunca quebram:** ao renomear rota, deixar `<Navigate>`
@@ -62,6 +71,25 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
     `d-lg-none`/`d-none d-lg-block`). Nenhum `alert()`/`.alert` — avisos
     são `<aside>`.
 
+## Regras de negócio (entre telas)
+
+11. **Match recíproco:** dar match grava `mutuo: false`; só vira `true`
+    quando a outra pessoa retribui (botão "Simular" em Dar Match →
+    "Aguardando retribuição"). **Chat**, **treino individual** e
+    **confronto** só aceitam match recíproco (`utils/match.js`).
+12. **Confronto bilateral:** `pendente_aceite_adversario` → `confirmado` →
+    `resultado_registrado` → `resultado_confirmado` → `encerrado`. Os passos
+    da outra parte são simulados. Só o `resultado_confirmado` pontua no
+    Ranking: vitória 100, derrota 25 (`PONTOS_POR_RESULTADO`).
+13. **Tempo só existe com percurso verificado:** o Cronômetro simulado
+    compara o percurso selecionado com o "percorrido" e recusa se forem
+    diferentes; o modo GPS (opcional) só salva com distância rastreada. Tempo
+    com percurso conhecido atualiza "melhores tempos por percurso".
+14. **Boost** (`boostAte` no usuário) é demonstrativo, sem cobrança: quem tem
+    `boost` aparece na frente da fila do Dar Match.
+15. **Sem estilo inline** (`style={{}}`) em telas novas ou alteradas: usar
+    utilitários do Bootstrap ou uma classe em `custom.scss`.
+
 ## Paleta
 
 | Cor | Hex | Papel |
@@ -78,12 +106,23 @@ das cores originais.
 
 ```
 /              Landing (pública)
-/login         Login (valida usuário de teste fixo)
-/cadastro      Cadastro (simula, não persiste)
+/login         Login (valida contra o db.json)
+/cadastro      Cadastro (cria usuário no db.json; recusa e-mail repetido e
+               data de nascimento futura)
 /app/*         Área interna (AppLayout: hambúrguer desktop + abas mobile)
-  descoberta | chat | treino | mapa | tempos | confronto |
-  consultoria | ranking | perfil
+  descoberta | chat | passeios | treino | mapa | tempos | confronto |
+  consultoria | ranking | boost | perfil
 ```
+
+Menu por perfil (`ITENS` em `AppLayout.jsx`, campo `perfis`):
+
+- **Ciclista:** todos os itens.
+- **Equipe:** sem `descoberta`, `chat` e `confronto`; `treino` mostra só a
+  aba "Em equipe". Rota proibida pro perfil redireciona pra primeira tela
+  permitida.
+
+Nomes canônicos de menu: **Cronômetro** (rota `/app/mapa`, `h1`
+"Cronometrar percurso"), **Gerenciar Tempos**, **Confrontos**.
 
 Rotas antigas mantidas como redirect: `treino-individual`, `treino-equipe`
 (`?tipo=`) e `cronometro` → `/app/mapa`.
@@ -101,5 +140,5 @@ Rotas antigas mantidas como redirect: `treino-individual`, `treino-equipe`
 
 ---
 
-*(Última atualização: 2026-09-24 — criação por divisão do antigo
-`soul.md` em `SOUL.md` + `backlog.md` + `changelog.md`.)*
+*(Última atualização: 2026-10-26 — alinhado ao backend mockado e às regras
+de reciprocidade, Boost, Passeios e Cronômetro simulado.)*

@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useCandidatos, useAvaliarCandidato } from "../../hooks/useCiclaData.js";
+import {
+  useCandidatos,
+  useAvaliarCandidato,
+  useMatches,
+  useRetribuirMatch,
+} from "../../hooks/useCiclaData.js";
+import { ehMutuo } from "../../utils/match.js";
 
 function CardCandidato({ candidato, onAvaliar, isMobile }) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -94,6 +100,7 @@ function CardCandidato({ candidato, onAvaliar, isMobile }) {
           </span>
         </figure>
         <header>
+          {candidato.boost && <span className="badge bg-primary mb-1">Destaque (Boost)</span>}
           <h2 className="h5 mb-1">{candidato.nome}</h2>
           <p className="small text-body-secondary mb-3">
             {candidato.tipo} · {candidato.distanciaKm} km
@@ -126,8 +133,17 @@ function CardCandidato({ candidato, onAvaliar, isMobile }) {
 }
 
 export default function Descoberta() {
-  const { data: candidatos = [], isLoading, isError } = useCandidatos();
+  const { data: candidatosBrutos = [], isLoading, isError } = useCandidatos();
+  const { data: matches = [] } = useMatches();
   const avaliarMutation = useAvaliarCandidato();
+  const retribuirMutation = useRetribuirMatch();
+
+  // Boost: quem tem destaque vai pra frente da fila (a ordem original se
+  // mantém entre iguais, porque o sort do JS é estável).
+  const candidatos = [...candidatosBrutos].sort(
+    (a, b) => Number(Boolean(b.boost)) - Number(Boolean(a.boost))
+  );
+  const aguardandoRetribuicao = matches.filter((match) => !ehMutuo(match));
 
   const [mostrarInstrucao, setMostrarInstrucao] = useState(true);
 
@@ -190,6 +206,36 @@ export default function Descoberta() {
               </section>
             ))}
           </section>
+        </section>
+      )}
+
+      {aguardandoRetribuicao.length > 0 && (
+        <section className="mt-4">
+          <h2 className="h5">Aguardando retribuição</h2>
+          <p className="small text-body-secondary">
+            Você só conversa e marca treino individual depois que a outra pessoa também der
+            match. Como só há uma conta logada por vez, o botão abaixo simula a resposta dela.
+          </p>
+          <ul className="list-group">
+            {aguardandoRetribuicao.map((match) => (
+              <li
+                key={match.id}
+                className="list-group-item d-flex align-items-center justify-content-between gap-2"
+              >
+                <span>
+                  {match.nome} <span className="small text-body-secondary">· {match.distanciaKm} km</span>
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-outline-primary btn-sm"
+                  disabled={retribuirMutation.isPending}
+                  onClick={() => retribuirMutation.mutate(match.id)}
+                >
+                  Simular: {match.nome.split(" ")[0]} retribuiu
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </main>

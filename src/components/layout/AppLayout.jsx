@@ -2,21 +2,28 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import Footer from "./Footer.jsx";
 import { usuarioLogadoId } from "../../api/sessao.js";
+import { usePerfilUsuario } from "../../hooks/useCiclaData.js";
 
-// Itens do menu com o nome atualizado para "Cronômetro"
+// Itens do menu, com os perfis que enxergam cada um. O perfil Equipe não
+// namora (Dar Match, Chat) nem disputa Confrontos individuais. "Perfil" é
+// sempre o último (regra 6 do soul.md).
+const CICLISTA = ["ciclista"];
+const AMBOS = ["ciclista", "equipe"];
 const ITENS = [
-  { to: "descoberta", texto: "Dar Match" },
-  { to: "chat", texto: "Chat" },
-  { to: "treino", texto: "Treino" },
-  { to: "mapa", texto: "Cronômetro" },
-  { to: "tempos", texto: "Gerenciar Tempos" },
-  { to: "confronto", texto: "Confrontos" },
-  { to: "consultoria", texto: "Consultoria" },
-  { to: "ranking", texto: "Ranking" },
-  { to: "perfil", texto: "Perfil" },
+  { to: "descoberta", texto: "Dar Match", perfis: CICLISTA },
+  { to: "chat", texto: "Chat", perfis: CICLISTA },
+  { to: "passeios", texto: "Passeios", perfis: AMBOS },
+  { to: "treino", texto: "Treino", perfis: AMBOS },
+  { to: "mapa", texto: "Cronômetro", perfis: AMBOS },
+  { to: "tempos", texto: "Gerenciar Tempos", perfis: AMBOS },
+  { to: "confronto", texto: "Confrontos", perfis: CICLISTA },
+  { to: "consultoria", texto: "Consultoria", perfis: AMBOS },
+  { to: "ranking", texto: "Ranking", perfis: AMBOS },
+  { to: "boost", texto: "Boost", perfis: AMBOS },
+  { to: "perfil", texto: "Perfil", perfis: AMBOS },
 ];
 
-function DesktopMenu() {
+function DesktopMenu({ itens }) {
   const [aberto, setAberto] = useState(false);
 
   useEffect(() => {
@@ -52,7 +59,7 @@ function DesktopMenu() {
         >
           <span className="cicla-overlay-brand">Cicla+</span>
           <ul>
-            {ITENS.map((item) => (
+            {itens.map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
@@ -72,7 +79,7 @@ function DesktopMenu() {
   );
 }
 
-function MobileTabs() {
+function MobileTabs({ itens }) {
   const location = useLocation();
   const subrotaAtiva = location.pathname.split("/").filter(Boolean).pop();
   const tabsRef = useRef({});
@@ -92,7 +99,7 @@ function MobileTabs() {
   return (
     <nav className="d-lg-none cicla-tabs-wrapper bg-primary">
       <section className="cicla-tabs-scroll">
-        {ITENS.map((item) => (
+        {itens.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -116,15 +123,32 @@ function MobileTabs() {
 }
 
 export default function AppLayout() {
+  const usuarioId = usuarioLogadoId();
+  const { data: conta } = usePerfilUsuario(usuarioId);
+  const location = useLocation();
+
   // Guarda de rota mínima: sem sessão, nenhuma tela de /app/* é acessível.
-  if (usuarioLogadoId() == null) {
+  if (usuarioId == null) {
     return <Navigate to="/login" replace />;
+  }
+
+  // O menu muda com o perfil (Ciclista × Equipe). Enquanto a conta carrega,
+  // vale o perfil padrão (Ciclista).
+  const perfil = conta?.perfil ?? "ciclista";
+  const itens = ITENS.filter((item) => item.perfis.includes(perfil));
+
+  // Rota existente mas não permitida pro perfil atual (ex.: Equipe abrindo
+  // /app/chat por link salvo) volta pra primeira tela do perfil.
+  const subrota = location.pathname.split("/").filter(Boolean)[1];
+  const rotaConhecida = ITENS.some((item) => item.to === subrota);
+  if (conta && rotaConhecida && !itens.some((item) => item.to === subrota)) {
+    return <Navigate to={`/app/${itens[0].to}`} replace />;
   }
 
   return (
     <div className="d-flex flex-column min-vh-100">
-      <DesktopMenu />
-      <MobileTabs />
+      <DesktopMenu itens={itens} />
+      <MobileTabs itens={itens} />
 
       <Outlet />
 
