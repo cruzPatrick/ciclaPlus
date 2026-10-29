@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   useCandidatos,
   useAvaliarCandidato,
@@ -6,6 +6,23 @@ import {
   useRetribuirMatch,
 } from "../../hooks/useCiclaData.js";
 import { ehMutuo } from "../../utils/match.js";
+
+// O jeito de navegar nos candidatos depende de COMO a pessoa usa o aparelho,
+// não do tamanho da janela: com toque (celular/tablet) vale o card único com
+// arrastar; com mouse, aparecem todos os candidatos, mesmo em janela estreita.
+const CONSULTA_TOQUE = "(pointer: coarse)";
+
+function useToque() {
+  return useSyncExternalStore(
+    (aviso) => {
+      const consulta = window.matchMedia(CONSULTA_TOQUE);
+      consulta.addEventListener("change", aviso);
+      return () => consulta.removeEventListener("change", aviso);
+    },
+    () => window.matchMedia(CONSULTA_TOQUE).matches,
+    () => false
+  );
+}
 
 function CardCandidato({ candidato, onAvaliar, isMobile }) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -137,6 +154,7 @@ export default function Descoberta() {
   const { data: matches = [] } = useMatches();
   const avaliarMutation = useAvaliarCandidato();
   const retribuirMutation = useRetribuirMatch();
+  const usaToque = useToque();
 
   // Boost: quem tem destaque vai pra frente da fila (a ordem original se
   // mantém entre iguais, porque o sort do JS é estável).
@@ -189,23 +207,25 @@ export default function Descoberta() {
         <aside className="text-body-secondary">Sem novos ciclistas por perto no momento.</aside>
       ) : (
         <section>
-          <section className="d-lg-none mx-auto" style={{ maxWidth: "300px" }}>
-            <CardCandidato candidato={candidatos[0]} onAvaliar={avaliar} isMobile={true} />
+          {usaToque ? (
+            <section className="mx-auto" style={{ maxWidth: "300px" }}>
+              <CardCandidato candidato={candidatos[0]} onAvaliar={avaliar} isMobile={true} />
 
-            {mostrarInstrucao && (
-              <aside className="text-center text-body-secondary small mt-3">
-                👈 Arraste para passar | Arraste para dar match 👉
-              </aside>
-            )}
-          </section>
-
-          <section className="d-none d-lg-flex flex-wrap gap-3">
-            {candidatos.map((candidato) => (
-              <section key={candidato.id} style={{ width: "220px" }}>
-                <CardCandidato candidato={candidato} onAvaliar={avaliar} isMobile={false} />
-              </section>
-            ))}
-          </section>
+              {mostrarInstrucao && (
+                <aside className="text-center text-body-secondary small mt-3">
+                  👈 Arraste para passar | Arraste para dar match 👉
+                </aside>
+              )}
+            </section>
+          ) : (
+            <section className="d-flex flex-wrap gap-3">
+              {candidatos.map((candidato) => (
+                <section key={candidato.id} style={{ width: "220px" }}>
+                  <CardCandidato candidato={candidato} onAvaliar={avaliar} isMobile={false} />
+                </section>
+              ))}
+            </section>
+          )}
         </section>
       )}
 

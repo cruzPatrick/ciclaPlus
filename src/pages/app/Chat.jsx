@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMatches, useMensagens, useEnviarMensagem } from "../../hooks/useCiclaData.js";
+import {
+  useMatches,
+  useMensagens,
+  useEnviarMensagem,
+  useDesfazerMatch,
+} from "../../hooks/useCiclaData.js";
 import { ehMutuo } from "../../utils/match.js";
 
 // Um item da lista de conversas — mesmo componente usado na lista mobile
@@ -34,10 +39,78 @@ const esquemaMensagem = z.object({
   texto: z.string().trim().min(1, "Escreva algo antes de enviar"),
 });
 
+const esquemaDesfazer = z.object({
+  apagarMensagens: z.boolean(),
+  apagarConfrontos: z.boolean(),
+});
+
+// Confirmação de "Desfazer match" com o que apagar junto (tudo desmarcado por
+// padrão: apagar histórico é opção de quem desfaz, não o padrão).
+function FormularioDesfazerMatch({ nome, enviando, onConfirmar, onCancelar }) {
+  const idBase = useId();
+  const { register, handleSubmit } = useForm({
+    resolver: zodResolver(esquemaDesfazer),
+    defaultValues: { apagarMensagens: false, apagarConfrontos: false },
+  });
+
+  return (
+    <form
+      className="bg-light border border-danger rounded p-2 small mb-2"
+      onSubmit={handleSubmit(onConfirmar)}
+      noValidate
+    >
+      <p className="m-0 mb-2">
+        O match com <strong>{nome}</strong> será desfeito e a pessoa volta pra fila do Dar
+        Match. Marque o que mais deve ser apagado:
+      </p>
+
+      <section className="form-check mb-1">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          id={`${idBase}-mensagens`}
+          {...register("apagarMensagens")}
+        />
+        <label className="form-check-label" htmlFor={`${idBase}-mensagens`}>
+          Apagar histórico de mensagens
+        </label>
+        <p className="form-text m-0">
+          Se não marcar, a conversa volta caso vocês deem match de novo.
+        </p>
+      </section>
+
+      <section className="form-check mb-2">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          id={`${idBase}-confrontos`}
+          {...register("apagarConfrontos")}
+        />
+        <label className="form-check-label" htmlFor={`${idBase}-confrontos`}>
+          Apagar histórico de confrontos
+        </label>
+        <p className="form-text m-0">
+          Se não marcar, o histórico continua na tela de Confrontos.
+        </p>
+      </section>
+
+      <button type="submit" className="btn btn-danger btn-sm me-2" disabled={enviando}>
+        Desfazer match
+      </button>
+      <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onCancelar}>
+        Cancelar
+      </button>
+    </form>
+  );
+}
+
 // A conversa aberta: histórico de mensagens + formulário de envio.
-function ThreadConversa({ conversa }) {
+function ThreadConversa({ conversa, aoDesfazer }) {
   const { data: mensagens = [], isLoading } = useMensagens(conversa.id);
   const enviarMutation = useEnviarMensagem(conversa.id);
+  const desfazerMutation = useDesfazerMatch();
+  // Confirmação inline (sem alert()): o clique em "Desfazer match" só abre o aviso.
+  const [confirmando, setConfirmando] = useState(false);
 
   const {
     register,
@@ -47,6 +120,18 @@ function ThreadConversa({ conversa }) {
   } = useForm({ resolver: zodResolver(esquemaMensagem), defaultValues: { texto: "" } });
 
   const liberada = ehMutuo(conversa);
+
+  function desfazer(opcoes) {
+    desfazerMutation.mutate(
+      { match: conversa, ...opcoes },
+      {
+        onSuccess: () => {
+          setConfirmando(false);
+          aoDesfazer?.();
+        },
+      }
+    );
+  }
 
   function aoEnviar(dados) {
     // Defesa dupla: mesmo se o campo for habilitado pelo DevTools, o envio
@@ -58,10 +143,42 @@ function ThreadConversa({ conversa }) {
 
   return (
     <>
+      <header className="d-flex align-items-center justify-content-between mb-2">
+        <h2 className="h6 m-0">{conversa.nome}</h2>
+        {!confirmando && (
+          <button
+            type="button"
+            className="btn btn-outline-danger btn-sm"
+            onClick={() => setConfirmando(true)}
+          >
+            Desfazer match
+          </button>
+        )}
+      </header>
+
+      {confirmando && (
+        <FormularioDesfazerMatch
+          nome={conversa.nome}
+          enviando={desfazerMutation.isPending}
+          onConfirmar={desfazer}
+          onCancelar={() => setConfirmando(false)}
+        />
+      )}
+
+      {desfazerMutation.isError && (
+        <aside className="bg-light border border-danger text-danger rounded p-2 small mb-2">
+          Não foi possível desfazer o match. Confere se o json-server está rodando e tenta de novo.
+        </aside>
+      )}
+
       <section className="cicla-thread border rounded p-3 mb-2">
         {isLoading && <p className="text-body-secondary small m-0">Carregando conversa...</p>}
         {mensagens.map((mensagem) => (
           <p key={mensagem.id} className={"mb-2 " + (mensagem.autor === "Você" ? "text-end" : "")}>
+            {/* "Você" nas minhas mensagens; nas do outro lado, o nome de quem enviou */}
+            <small className="d-block text-body-secondary" style={{ fontSize: "0.75rem" }}>
+              {mensagem.autor}
+            </small>
             <span
               className={
                 "d-inline-block px-2 py-1 rounded " +
@@ -181,7 +298,7 @@ export default function Chat() {
             >
               <span className="material-icons align-middle">arrow_back</span> Voltar
             </button>
-            <ThreadConversa conversa={conversaAtiva} />
+            <ThreadConversa conversa={conversaAtiva} aoDesfazer={() => setTelaMobile("lista")} />
           </>
         )}
       </div>

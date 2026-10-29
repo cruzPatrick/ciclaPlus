@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -13,6 +13,14 @@ import {
 } from "../../hooks/useCiclaData.js";
 import { usuarioLogadoId } from "../../api/sessao.js";
 import { ehMutuo } from "../../utils/match.js";
+import {
+  hoje,
+  horaAgora,
+  dataNaoPassou,
+  horaNaoPassou,
+  MSG_DATA_PASSADA,
+  MSG_HORA_PASSADA,
+} from "../../utils/dataHora.js";
 
 // Página única de Treino: a escolha entre Individual e Equipe é uma aba
 // dentro da própria página. O perfil Equipe só enxerga a aba de equipe.
@@ -21,25 +29,38 @@ const RATULO_TIPO = { individual: "Individual", equipe: "Equipe" };
 
 // Treino individual é sempre com outro ciclista, e só com quem já retribuiu
 // o match (match recíproco).
-const esquemaIndividual = z.object({
-  parceiro: z.string().min(1, "Selecione um parceiro que já retribuiu o match"),
-  data: z.string().min(1, "Informe a data"),
-  hora: z.string().min(1, "Informe a hora"),
-});
+const esquemaIndividual = z
+  .object({
+    parceiro: z.string().min(1, "Selecione um parceiro que já retribuiu o match"),
+    data: z.string().min(1, "Informe a data"),
+    hora: z.string().min(1, "Informe a hora"),
+  })
+  .refine(dataNaoPassou, MSG_DATA_PASSADA)
+  .refine(horaNaoPassou, MSG_HORA_PASSADA);
 
-const esquemaEquipe = z.object({
-  equipe: z.string().min(1, "Selecione a equipe"),
-  data: z.string().min(1, "Informe a data"),
-  hora: z.string().min(1, "Informe a hora"),
-});
+const esquemaEquipe = z
+  .object({
+    equipe: z.string().min(1, "Selecione a equipe"),
+    data: z.string().min(1, "Informe a data"),
+    hora: z.string().min(1, "Informe a hora"),
+  })
+  .refine(dataNaoPassou, MSG_DATA_PASSADA)
+  .refine(horaNaoPassou, MSG_HORA_PASSADA);
 
 function FormularioIndividual({ parceiros, onAgendar }) {
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(esquemaIndividual) });
+
+  // Bloqueia no próprio seletor o que já passou: dias anteriores a hoje e,
+  // se o dia escolhido é hoje, horários anteriores à hora atual.
+  const minData = hoje();
+  const dataEscolhida = useWatch({ control, name: "data" });
+  const minHora = dataEscolhida === minData ? horaAgora() : undefined;
 
   async function aoEnviar(dados) {
     await onAgendar({ ...dados, tipo: "individual", equipe: null, feito: false });
@@ -75,6 +96,7 @@ function FormularioIndividual({ parceiros, onAgendar }) {
         <input
           type="date"
           id="data"
+          min={minData}
           className={"form-control" + (errors.data ? " is-invalid" : "")}
           {...register("data")}
         />
@@ -85,6 +107,7 @@ function FormularioIndividual({ parceiros, onAgendar }) {
         <input
           type="time"
           id="hora"
+          min={minHora}
           className={"form-control" + (errors.hora ? " is-invalid" : "")}
           {...register("hora")}
         />
@@ -102,8 +125,15 @@ function FormularioEquipe({ equipes, onAgendar }) {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(esquemaEquipe) });
+
+  // Bloqueia no próprio seletor o que já passou: dias anteriores a hoje e,
+  // se o dia escolhido é hoje, horários anteriores à hora atual.
+  const minData = hoje();
+  const dataEscolhida = useWatch({ control, name: "data" });
+  const minHora = dataEscolhida === minData ? horaAgora() : undefined;
 
   async function aoEnviar(dados) {
     await onAgendar({ ...dados, tipo: "equipe", parceiro: null, feito: false });
@@ -132,6 +162,7 @@ function FormularioEquipe({ equipes, onAgendar }) {
         <input
           type="date"
           id="data-equipe"
+          min={minData}
           className={"form-control" + (errors.data ? " is-invalid" : "")}
           {...register("data")}
         />
@@ -142,6 +173,7 @@ function FormularioEquipe({ equipes, onAgendar }) {
         <input
           type="time"
           id="hora-equipe"
+          min={minHora}
           className={"form-control" + (errors.hora ? " is-invalid" : "")}
           {...register("hora")}
         />

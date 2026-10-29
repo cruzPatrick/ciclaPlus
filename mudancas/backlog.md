@@ -28,6 +28,22 @@ Query; login/cadastro validam contra o backend mockado; sessão
 (`usuarioId`) fica em `localStorage`. Escopo por conta (só `matches` em
 2026-10-02, estendido no mesmo dia a `candidatos`, `treinos`, `tempos`,
 `confrontos` e `consultorias`) também resolvido — ver `changelog.md`.
+**API Express + MongoDB (M2, pasta `backend/`):** pronta e testada, mas ainda
+**não ligada** ao app. Pendências:
+
+- [ ] **Migrar usuários e login para o Express com autenticação de verdade** (hash
+  de senha + JWT). Hoje o login é do json-server e a API recebe o `usuarioId` por
+  header (`x-usuario-id`), solução provisória. É o pré-requisito para ligar o
+  frontend à API.
+- [ ] **Alinhar a API ao fluxo atual do app** antes de ligá-lo: o app usa o status
+  `resultado_confirmado` (pontua no Ranking: vitória 100, derrota 25), cancelar
+  confronto, o Boost por `boostAte` no usuário e o rótulo "Aguardando retribuição"
+  em matches. A API hoje encerra o confronto em um passo e grava `vencedor`.
+- [ ] **Migrar treinos, passeios, tempos, percursos, consultorias e ranking** para
+  o Express e repetir no servidor a validação de data/hora no passado (hoje só no
+  frontend, `src/utils/dataHora.js`).
+- [ ] **Distância e tipo de bike nos candidatos** quando vierem da API (hoje
+  `distanciaKm` chega nulo; o cadastro não tem localização/tipo de bike).
 
 ## Infra / deploy
 

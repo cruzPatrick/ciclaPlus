@@ -38,6 +38,7 @@ async function porConta(caminho, usuarioId) {
 // --- Descoberta (candidatos pro "Dar Match") ---------------------------
 export const candidatosApi = {
   listarPorUsuario: (usuarioId) => porConta("/candidatos", usuarioId),
+  adicionar: (candidato) => apiPost("/candidatos", candidato),
   remover: (id) => apiDelete(`/candidatos/${id}`),
 };
 
@@ -47,6 +48,7 @@ export const matchesApi = {
   listarPorUsuario: (usuarioId) => porConta("/matches", usuarioId),
   adicionar: (match) => apiPost("/matches", match),
   atualizar: (id, dados) => apiPatch(`/matches/${id}`, dados),
+  remover: (id) => apiDelete(`/matches/${id}`),
 };
 
 // --- Mensagens (Chat, por match) -----------------------------------------
@@ -58,6 +60,14 @@ export const mensagensApi = {
     return mensagens.filter((m) => String(m.matchId) === String(matchId));
   },
   enviar: (mensagem) => apiPost("/mensagens", mensagem),
+  // Apaga a conversa inteira de um match (Desfazer match). Em sequência, não em
+  // paralelo: o json-server reescreve o db.json a cada exclusão.
+  async removerPorMatch(matchId) {
+    const mensagens = await apiGet("/mensagens");
+    for (const m of mensagens.filter((m) => String(m.matchId) === String(matchId))) {
+      await apiDelete(`/mensagens/${m.id}`);
+    }
+  },
 };
 
 // --- Treinos ---------------------------------------------------------------
@@ -98,6 +108,13 @@ export const confrontosApi = {
   marcar: (confronto) => apiPost("/confrontos", confronto),
   atualizar: (id, dados) => apiPatch(`/confrontos/${id}`, dados),
   remover: (id) => apiDelete(`/confrontos/${id}`),
+  // Apaga o histórico de confrontos da conta com uma pessoa (Desfazer match).
+  async removerDoAdversario(usuarioId, adversario) {
+    const meus = await porConta("/confrontos", usuarioId);
+    for (const c of meus.filter((c) => c.adversario === adversario)) {
+      await apiDelete(`/confrontos/${c.id}`);
+    }
+  },
 };
 
 // --- Consultoria -----------------------------------------------------------

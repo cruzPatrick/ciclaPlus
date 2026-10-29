@@ -37,6 +37,23 @@ Login de teste: `teste@ciclaplus.com` / `123456` (dado inicial em
 Login e Cadastro autenticam/criam conta de verdade contra o json-server
 e guardam a sessão (`usuarioId`) em `localStorage`.
 
+## Backend (API Express + MongoDB — M2, em paralelo)
+
+A pasta `backend/` traz uma API Express + MongoDB para Match, Chat, Confronto,
+Boost e Desfazer match, com testes automatizados. Por enquanto ela roda **em
+paralelo**: o app React continua usando o json-server (`npm run mock`) em tudo.
+Ligar o app à API depende de migrar usuários e login para o MongoDB (ver
+`mudancas/backlog.md`).
+
+```bash
+docker run -d --name ciclaplus-mongo -p 27018:27017 -v ciclaplus-mongo-data:/data/db mongo   # 1ª vez
+cd backend && npm install
+npm start        # API em http://localhost:3000
+npm test         # 29 testes, banco separado "ciclaplus_test"
+```
+
+Detalhes, rotas e regras em `backend/README.md`.
+
 ## Decisões de estrutura
 
 - **Cores sem CSS custom**: `src/styles/custom.scss` sobrescreve as
