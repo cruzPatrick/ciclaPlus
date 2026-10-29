@@ -23,7 +23,6 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
   simulado por botões "Simular: ...".
 
 ## Stack
-
 | Camada | Tecnologia |
 |---|---|
 | Build | Vite 8 |
@@ -34,6 +33,8 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
 | Mapa (GPS opcional) | Leaflet 1.9 + tiles OpenStreetMap, carregado só na aba GPS (`React.lazy`) |
 | Lint | oxlint (`npm run lint`) |
 | Deploy | GitHub Pages via Actions, **só manual** (`workflow_dispatch`) |
+| Backend (M2) | Express 5 + Mongoose + MongoDB (Docker, porta 27018 local), porta 3000 — pasta `backend/`, **em paralelo** ao json-server (ainda não ligada ao app) |
+| Testes do backend | `node --test` + `supertest`, banco separado `ciclaplus_test` (`npm test` em `backend/`) |
 
 ## Regras invioláveis
 
@@ -46,6 +47,12 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
    parte obrigatória do fluxo (ver `npm run dev` + `npm run mock` no
    README). Dados sensíveis de sessão (`usuarioId` logado) continuam só
    em `localStorage`, nunca em texto hard-coded.
+   **Extensão M2 (2026-10-27):** existe uma API Express + MongoDB em `backend/`,
+   com dados fictícios e uso local. Enquanto o login e os usuários não migrarem
+   para ela, o app continua consumindo só o json-server. Quando for ligada, a regra
+   de ouro permanece: nenhum componente faz `fetch` direto; tudo passa por
+   `src/api/*` e pelos hooks do Tanstack Query.
+   
 2. **Cores só via variáveis do Bootstrap** (paleta em `custom.scss`): não
    escrever cor hard-coded em CSS/JS — `$primary`/`$secondary`/`.bg-ciclagrey`
    já nascem certos. CSS custom só onde o Bootstrap não cobre.
@@ -70,6 +77,10 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
     (page wrapper `min-vh-100`, `container`, `row`, wrappers de breakpoint
     `d-lg-none`/`d-none d-lg-block`). Nenhum `alert()`/`.alert` — avisos
     são `<aside>`.
+11. **Data e hora no passado nunca:** todo formulário com data ou hora usa
+`src/utils/dataHora.js` — `min` no `<input>` e as regras `.refine()` no schema
+zod. Enquanto o recurso estiver no json-server, a validação existe só no
+frontend; ao migrar para o Express, repetir a regra no servidor.
 
 ## Regras de negócio (entre telas)
 

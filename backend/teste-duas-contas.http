@@ -1,0 +1,73 @@
+### Extensão "REST Client" (VS Code). Troque os ids pelos _id reais de duas contas no Mongo.
+@host = http://localhost:3000
+@A = COLE_O_ID_DA_CONTA_A
+@B = COLE_O_ID_DA_CONTA_B
+
+### 1. A vê candidatos
+GET {{host}}/candidatos
+x-usuario-id: {{A}}
+
+### 2. A dá match em B (ainda não é match: B não retribuiu)
+POST {{host}}/candidatos/{{B}}/avaliar
+x-usuario-id: {{A}}
+Content-Type: application/json
+
+{ "status": "match" }
+
+### 3. B dá match em A  -> deuMatch: true (guarde o matchId)
+POST {{host}}/candidatos/{{A}}/avaliar
+x-usuario-id: {{B}}
+Content-Type: application/json
+
+{ "status": "match" }
+
+### 4. Ambos veem o match
+GET {{host}}/matches
+x-usuario-id: {{A}}
+
+### 5. A manda mensagem (troque MATCH_ID)
+POST {{host}}/mensagens
+x-usuario-id: {{A}}
+Content-Type: application/json
+
+{ "matchId": "MATCH_ID", "texto": "Bora pedalar sábado?" }
+
+### 6. B lê (autor aparece com o nome de A; para A aparece "Você")
+GET {{host}}/mensagens?matchId=MATCH_ID
+x-usuario-id: {{B}}
+
+### 7. A desafia B
+POST {{host}}/confrontos
+x-usuario-id: {{A}}
+Content-Type: application/json
+
+{ "adversarioId": "{{B}}" }
+
+### 8. B aceita (troque CONFRONTO_ID)
+PATCH {{host}}/confrontos/CONFRONTO_ID
+x-usuario-id: {{B}}
+Content-Type: application/json
+
+{ "status": "confirmado" }
+
+### 9. A registra Vitória
+PATCH {{host}}/confrontos/CONFRONTO_ID
+x-usuario-id: {{A}}
+Content-Type: application/json
+
+{ "status": "resultado_registrado", "resultado": "Vitória" }
+
+### 10. B vê "Derrota" (resultado invertido) e encerra
+PATCH {{host}}/confrontos/CONFRONTO_ID
+x-usuario-id: {{B}}
+Content-Type: application/json
+
+{ "status": "encerrado" }
+
+### Desfazer match; apagarMensagens e apagarConfrontos são opcionais (troque MATCH_ID)
+DELETE {{host}}/matches/MATCH_ID?apagarMensagens=true&apagarConfrontos=true
+x-usuario-id: {{A}}
+
+### Boost
+POST {{host}}/boost
+x-usuario-id: {{A}}

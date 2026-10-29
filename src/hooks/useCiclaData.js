@@ -104,6 +104,38 @@ export function useRetribuirMatch() {
   });
 }
 
+// Desfazer match: remove o match e devolve a pessoa pra fila do Dar Match.
+// Mensagens e confrontos com ela só são apagados se pedido; as mensagens
+// guardadas voltam se vocês derem match de novo (o id do match é o mesmo).
+export function useDesfazerMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ match, apagarMensagens, apagarConfrontos }) => {
+      const usuarioId = usuarioLogadoId();
+      if (apagarMensagens) await mensagensApi.removerPorMatch(match.id);
+      if (apagarConfrontos) await confrontosApi.removerDoAdversario(usuarioId, match.nome);
+      await matchesApi.remover(match.id);
+      try {
+        await candidatosApi.adicionar({
+          id: match.id,
+          nome: match.nome,
+          tipo: "Ciclista",
+          distanciaKm: match.distanciaKm,
+          usuarioId,
+        });
+      } catch {
+        // Já estava na fila: nada a fazer.
+      }
+    },
+    onSuccess: (_dados, { match }) => {
+      queryClient.removeQueries({ queryKey: ["mensagens", match.id] });
+      queryClient.invalidateQueries({ queryKey: ["matches"] });
+      queryClient.invalidateQueries({ queryKey: ["candidatos"] });
+      queryClient.invalidateQueries({ queryKey: ["confrontos"] });
+    },
+  });
+}
+
 // ===== Chat (mensagens por match) =========================================
 
 export function useMensagens(matchId) {

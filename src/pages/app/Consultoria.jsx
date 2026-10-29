@@ -6,6 +6,7 @@ import {
   useSolicitarConsultoria,
   useCancelarConsultoria,
 } from "../../hooks/useCiclaData.js";
+import { hoje, dataNaoPassou, MSG_DATA_PASSADA } from "../../utils/dataHora.js";
 
 // Especialistas disponíveis pra consultoria — opção de referência, não é
 // uma entidade com CRUD próprio (diferente de confrontos, tempos etc.).
@@ -21,11 +22,13 @@ const ROTULO_STATUS = {
   concluida: { texto: "Concluída", cor: "dark" },
 };
 
-const esquemaConsultoria = z.object({
-  especialista: z.string().min(1, "Selecione um especialista"),
-  assunto: z.string().min(3, "Descreva brevemente o assunto"),
-  data: z.string().min(1, "Escolha uma data"),
-});
+const esquemaConsultoria = z
+  .object({
+    especialista: z.string().min(1, "Selecione um especialista"),
+    assunto: z.string().min(3, "Descreva brevemente o assunto"),
+    data: z.string().min(1, "Escolha uma data"),
+  })
+  .refine(dataNaoPassou, MSG_DATA_PASSADA);
 
 export default function Consultoria() {
   const { data: consultorias = [], isLoading, isError } = useConsultorias();
@@ -91,6 +94,7 @@ export default function Consultoria() {
                 <input
                   type="date"
                   id="data-consultoria"
+                  min={hoje()}
                   className={"form-control" + (errors.data ? " is-invalid" : "")}
                   {...register("data")}
                 />

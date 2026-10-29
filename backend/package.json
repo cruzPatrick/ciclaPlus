@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "API Express + MongoDB local, dados fictícios (escopo do M2: sem usuários reais, GPS ou pagamento).",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "mongoose": "^9.11.4"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.1"
+  }
+}
