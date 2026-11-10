@@ -1,29 +1,49 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./client.js";
+import { api } from "./apiClient.js";
+import { usuarioLogadoId } from "./sessao.js";
 import { normalizarTempo, paraSegundos } from "../utils/tempo.js";
 
-// --- Usuários (login / cadastro / perfil / boost) ----------------------
+// --- Usuários (login / cadastro / perfil) -------------------------------
+// Agora vêm da API Express (backend/), com JWT. Ver src/api/apiClient.js.
+//
+// ATENÇÃO (Boost): a API ainda não tem "boostAte" no perfil (o Boost do
+// backend é outro modelo: POST /boost). Enquanto a tela de Boost não migrar,
+// o estado dela fica no navegador (localStorage, por usuário), só para a
+// demonstração continuar funcionando. Quem migrar Boost para a API remove isto.
+const chaveBoost = (id) => `ciclaplus.boostAte.${id}`;
+function lerBoost(id) {
+  try {
+    return localStorage.getItem(chaveBoost(id)) || null;
+  } catch {
+    return null;
+  }
+}
+function gravarBoost(id, valor) {
+  try {
+    if (valor) localStorage.setItem(chaveBoost(id), valor);
+    else localStorage.removeItem(chaveBoost(id));
+  } catch {
+    /* sem localStorage: o boost só não persiste */
+  }
+}
+
 export const usuariosApi = {
-  // Filtra no JS, não via querystring: o motor de filtro por múltiplos
-  // parâmetros do json-server@1 (beta) se mostrou instável em teste local
-  // (`?email=...&senha=...` retornando vazio mesmo com o registro
-  // existindo). Com o volume de dados mockado isso não tem custo real.
-  async autenticar(email, senha) {
-    const usuarios = await apiGet("/usuarios");
-    return usuarios.find((u) => u.email === email && u.senha === senha) ?? null;
+  // Devolve { token, usuario }; credenciais erradas → ApiError 401.
+  autenticar: (email, senha) => api.post("/auth/login", { email, senha }),
+  cadastrar: (dados) => api.post("/auth/cadastro", dados),
+  async buscarPorId(id) {
+    const eu = String(id) === String(usuarioLogadoId());
+    const perfil = await api.get(eu ? "/perfil" : `/perfil/${id}`);
+    return eu ? { ...perfil, boostAte: lerBoost(id) } : perfil;
   },
-  async emailJaExiste(email) {
-    const usuarios = await apiGet("/usuarios");
-    return usuarios.some((u) => u.email === email);
+  async atualizar(id, dados) {
+    const { boostAte, ...restante } = dados;
+    if (boostAte !== undefined) gravarBoost(id, boostAte);
+    if (Object.keys(restante).length > 0) await api.patch("/perfil", restante);
+    return usuariosApi.buscarPorId(id);
   },
-  cadastrar(dados) {
-    return apiPost("/usuarios", { ...dados, perfil: "ciclista" });
-  },
-  buscarPorId(id) {
-    return apiGet(`/usuarios/${id}`);
-  },
-  atualizar(id, dados) {
-    return apiPatch(`/usuarios/${id}`, dados);
-  },
+  trocarSenha: (senhaAtual, novaSenha) => api.put("/perfil/senha", { senhaAtual, novaSenha }),
+  excluirConta: (senha) => api.delete("/perfil", { senha }),
 };
 
 // --- Filtro por conta (dados pessoais) ----------------------------------
@@ -131,7 +151,11 @@ export const consultoriasApi = {
 export const PONTOS_POR_RESULTADO = { Vitória: 100, Derrota: 25 };
 
 export const rankingApi = {
-  geral: () => apiGet("/ranking"),
+  // Ranking geral vem da API: derivado dos confrontos ENCERRADOS (100/25).
+  async geral() {
+    const { itens } = await api.get("/ranking?limite=100");
+    return itens;
+  },
   melhoresTemposPorPercurso: () => apiGet("/melhoresTemposPorPercurso"),
 
   // Soma os pontos do resultado confirmado à linha da pessoa logada (cria a

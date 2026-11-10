@@ -4,7 +4,7 @@
   "description": "API Express + MongoDB local, dados fictícios (escopo do M2: sem usuários reais, GPS ou pagamento).",
   "main": "index.js",
   "scripts": {
-    "test": "node --test \"tests/**/*.test.js\"",
+    "test": "node --import ./tests/setup.js --test --test-concurrency=1 \"tests/**/*.test.js\"",
     "start": "node server.js"
   },
   "keywords": [],
@@ -12,9 +12,15 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
     "express": "^5.3.0",
-    "mongoose": "^9.11.4"
+    "express-rate-limit": "^8.7.3",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.11.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "supertest": "^7.3.1"

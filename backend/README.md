@@ -1,49 +1,62 @@
-# CiclaPlus — módulo de Match, Chat, Boost e Confronto (M2)
+# CiclaPlus — API (Express 5 + MongoDB)
 
-> **Situação:** a API roda **em paralelo** ao app. O app React continua usando o
-> json-server (`npm run mock`) nesses módulos. Ligar o frontend a esta API
-> depende de migrar usuários e login para o MongoDB (ver `mudancas/backlog.md`).
-> Enquanto isso, a API é exercitada pelos testes automatizados e pelo arquivo
-> `teste-duas-contas.http`.
+API local com dados fictícios (escopo do M2: sem GPS ou pagamento). Cobre
+**autenticação, perfil, ranking**, Match, Chat, Confronto e Boost. Prefixo de todas
+as rotas: **`/api/v1`**. Respostas de erro: `{ "erro": "mensagem", "detalhes"?: [...] }`.
 
-API Express + MongoDB local, dados fictícios (escopo do M2: sem usuários reais,
-GPS ou pagamento).
+## Rodar
 
-## Como plugar no servidor da aplicação
+```bash
+docker run -d --name ciclaplus-mongo -p 27018:27017 -v ciclaplus-mongo-data:/data/db mongo   # 1ª vez
+npm install
+cp .env.example .env     # defina JWT_SECRET (mín. 32 caracteres; comando no próprio arquivo)
+npm start                # http://localhost:3000/api/v1
+npm test                 # banco "ciclaplus_test" (porta 27018)
+node scripts/seed-usuarios.js   # 3 contas fictícias (senha em SEED_SENHA, padrão ciclaplus123)
+```
 
-1. Copie `models/`, `routes/` e `middleware/` para a pasta do backend.
-2. Dependências: `express` (v5), `mongoose`, `cors`.
-3. No servidor, depois de `express.json()` e `cors()` (neste pacote isso já está pronto em `app.js`):
+## Variáveis de ambiente (`.env.example`)
 
-   ```js
-   import rotasRelacionamento from './routes/index.js';
-   app.use(rotasRelacionamento);
-   ```
-4. O modelo `Usuario` da aplicação precisa de `nome`; `tipoBike` é opcional.
-5. Variável de ambiente: `MONGODB_URI` (padrão `mongodb://127.0.0.1:27017/ciclaplus`).
+`NODE_ENV`, `PORT` (3000), `MONGODB_URI` (`mongodb://127.0.0.1:27018/ciclaplus`),
+`MONGODB_URI_TEST`, `JWT_SECRET` (obrigatório em produção), `JWT_EXPIRES_IN` (7d),
+`BCRYPT_ROUNDS` (10), `CORS_ORIGINS` (`http://localhost:5173`), `RATE_LIMIT_GERAL`
+(300/15 min), `RATE_LIMIT_AUTH` (10/15 min). Configuração inválida impede o start.
 
-## Identificação do usuário (provisório)
+## Autenticação
 
-Toda rota exige o header `x-usuario-id` com o `_id` do usuário no Mongo. O
-frontend, quando for ligado à API, enviará o id guardado em `localStorage`
-(`ciclaplus.usuarioId`). Quando o JWT existir, troque só `middleware/usuarioAtual.js`.
+`POST /auth/cadastro` e `POST /auth/login` devolvem `{ token, usuario }`. As demais
+rotas exigem `Authorization: Bearer <token>`; a identidade vem **só do token**.
+Trocar a senha invalida os tokens antigos; excluir a conta também.
 
 ## Rotas
 
 | Método e caminho | O que faz |
 |---|---|
+| `POST /auth/cadastro` `{nome,email,senha,telefone?,dataNascimento?,perfil?}` | Cria conta (senha ≥ 8) → 201 |
+| `POST /auth/login` `{email,senha}` | Entra → `{token, usuario}` |
+| `GET /perfil` | Meus dados |
+| `PATCH /perfil` `{nome?,telefone?,dataNascimento?,tipoBike?,foto?,perfil?}` | Atualiza (`null`/`""` limpam opcionais; foto = URL https) |
+| `PUT /perfil/senha` `{senhaAtual,novaSenha}` | Troca a senha e devolve token novo |
+| `DELETE /perfil` `{senha}` | Exclui a conta e os dados ligados a ela → 204 |
+| `GET /perfil/:id` | Dados públicos de outra pessoa (nome, perfil, bike, foto) |
+| `GET /ranking?pagina=&limite=` | Ranking geral: `{itens,total,pagina,limite}` |
+| `GET /ranking/eu` | Minha posição e pontos |
 | `GET /candidatos` | Quem ainda não avaliei (com Boost primeiro) |
 | `POST /candidatos/:id/avaliar` `{status}` | `match` ou `passou`; devolve `{deuMatch, matchId}` |
-| `GET /matches` | Meus matches (`id`, `parceiroId`, `nome`) |
-| `DELETE /matches/:id?apagarMensagens=&apagarConfrontos=` | Desfaz o match e as avaliações; mensagens e confrontos só são apagados se pedido (`true`) |
-| `GET /mensagens?matchId=` | Conversa (só participantes) |
-| `POST /mensagens` `{matchId, texto}` | Envia (exige match) |
-| `GET /confrontos` | Meus confrontos, com status visto por mim |
-| `POST /confrontos` `{adversarioId}` | Desafia (exige match, sem confronto aberto) |
-| `PATCH /confrontos/:id` `{status, resultado?}` | `confirmado`, `resultado_registrado`, `encerrado` |
+| `GET /matches` | Meus matches |
+| `DELETE /matches/:id?apagarMensagens=&apagarConfrontos=` | Desfaz o match |
+| `GET /mensagens?matchId=` / `POST /mensagens` | Conversa / envia (exige match) |
+| `GET /confrontos` / `POST /confrontos` / `PATCH /confrontos/:id` | Fluxo de confronto |
 | `GET /boost` / `POST /boost` | Consulta / ativa (30 min) |
 
 ## Regras
+
+- **Ranking** é derivado dos confrontos `encerrado` com `vencedor`: vitória 100, derrota
+  25 (`encerrado` ≡ `resultado_confirmado` do app). Ninguém grava pontuação.
+- **Excluir conta** apaga likes, matches, mensagens, confrontos e boost da pessoa
+  (`config/limpezaConta.js`). Consequência: confrontos apagados deixam de pontuar o adversário.
+- Perfil: e-mail e senha não mudam por `PATCH /perfil`; campos desconhecidos dão 400.
+
 
 - Match só existe quando as duas pessoas deram match uma na outra.
 - Chat só entre quem tem match.
@@ -53,56 +66,22 @@ frontend, quando for ligado à API, enviará o id guardado em `localStorage`
 - Desfazer match sempre remove o match e devolve as duas pessoas à fila da Descoberta. Apagar o histórico de mensagens e/ou de confrontos é opcional (escolha de quem desfaz) e vale para os dois lados.
 - Se as mensagens NÃO forem apagadas, ficam guardadas e a conversa volta caso os dois deem match de novo.
 
+
 ## Testar com duas contas
 
-1. Suba o Mongo e a API (`docker start ciclaplus-mongo`, depois `npm start`).
-2. `node scripts/seed-usuarios.js` imprime os `_id` de três usuários.
-3. Abra `teste-duas-contas.http` (extensão REST Client do VS Code), troque `@A` e
-   `@B` pelos ids e execute as requisições em ordem: match recíproco, chat,
-   confronto até o encerramento, desfazer match e Boost.
-4. Ou rode `npm test`, que cobre esse mesmo fluxo de forma automática.
+1. Suba o Mongo e a API; rode `node scripts/seed-usuarios.js`.
+2. Abra `teste-duas-contas.http` (REST Client do VS Code), execute os dois logins e siga
+   as requisições em ordem (match, chat, confronto, desfazer match, boost).
+3. Ou rode `npm test` (cobre esse fluxo e auth, perfil, ranking e infraestrutura).
 
-## Estrutura da pasta
+## Estrutura
 
 ```
 backend/
-  app.js                   -> monta o Express (cors, json, rotas); usado pelo servidor e pelos testes
-  server.js                -> conecta no MongoDB e abre a porta (3000)
-  middleware/usuarioAtual.js
-  models/                  -> Usuario, Like, Match, Mensagem, Confronto, Boost
-  routes/                  -> descoberta, matches, mensagens, confrontos, boost (+ index.js)
-  scripts/seed-usuarios.js -> cria 3 usuários fictícios
-  tests/relacionamento.test.js
+  app.js, server.js        -> Express (helmet, CORS, rate limit) e porta
+  config/                  -> env.js (zod), db.js, limpezaConta.js
+  middleware/              -> usuarioAtual (JWT), validar (zod), errorHandler, notFound
+  models/ routes/ validators/ utils/
+  scripts/seed-usuarios.js
+  tests/                   -> setup.js, helpers.js, *.test.js (npm test roda em série)
 ```
-
-## Scripts (`package.json`)
-
-```json
-"type": "module",
-"scripts": {
-  "start": "node server.js",
-  "test": "node --test \"tests/**/*.test.js\""
-}
-```
-
-## Testes automatizados
-
-Usam o executor nativo do Node (`node --test`) e o `supertest`, contra o MongoDB
-local em um banco **separado** (`ciclaplus_test`). Cada teste apaga as coleções,
-por isso o teste se recusa a rodar se o nome do banco não tiver "test".
-
-```bash
-docker start ciclaplus-mongo
-npm install -D supertest   # uma vez
-npm test
-```
-
-Para usar outro banco de teste: `MONGODB_URI_TEST=mongodb://127.0.0.1:27018/outro_test`.
-
-Cobertura: identificação por header, Descoberta e match recíproco, Chat (acesso só
-para quem tem match e rótulos de autor), Confronto (status por lado, resultado
-invertido, encerramento bilateral, vencedor), Desfazer match (opções de apagar,
-volta das mensagens num novo match, retorno à fila) e Boost.
-
-O modelo `Usuario` usado nos testes precisa aceitar `nome`, `email` e `senha`
-como campos mínimos.

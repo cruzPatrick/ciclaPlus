@@ -2,7 +2,7 @@
 
 *Registro cronológico das rodadas de trabalho no protótipo: de onde veio
 *cada mudança, por quê e como verificar. Diretrizes, stack e regras do
-*projeto: `SOUL.md`. Pendências e tarefas futuras: `backlog.md`.*
+*projeto: `soul.md`. Pendências e tarefas futuras: `backlog.md`.*
 
 ---
 
@@ -1375,4 +1375,42 @@ respondendo (hoje simulado por botão).
 Uns **50 minutos** de rodada (revisão das mudanças, correções, alinhamento
 dos docs e commit em `main`).
 
+---
 
+## 2026-11-08 — Infra segura do backend, autenticação, perfil completo e ranking na API
+
+### Contexto
+Patrick (infra compartilhada, perfil e ranking) pediu a implementação completa após a
+auditoria. Decisões: autenticação obrigatória (JWT); layout plano do `backend/`; ranking
+com vencedor 100 / perdedor 25 e `encerrado` ≡ `resultado_confirmado`; perfil com foto,
+tipo de bike e exclusão de conta; "melhores tempos por percurso" fica com Tempos; tudo de
+usuário/ranking via API.
+
+### O que mudou
+- **Backend:** `config/` (env com zod, db, limpeza de conta), `middleware/` (JWT único,
+  validação, errorHandler, notFound), helmet, CORS por lista, rate limit (geral e login),
+  prefixo `/api/v1`, bcrypt, rotas `auth`, `perfil` (GET/PATCH/PUT senha/DELETE/GET público)
+  e `ranking` (derivado dos confrontos encerrados). `Usuario` ganhou `senhaHash`
+  (`select:false`), `tokenVersao`, `foto`. Seed com hash; `.env.example`; `.gitignore` com `.env`.
+- **Frontend:** `apiClient.js` (Bearer, `VITE_API_URL`), sessão com token, Login, Cadastro
+  (senha ≥ 8, e-mail duplicado vindo da API), Perfil (foto, tipo de bike, trocar senha,
+  excluir conta), Ranking (vitórias/derrotas/pontos; sem "melhor tempo" no geral).
+- **Documentação corrigida:** `soul.md` (nome do arquivo, estado atual, stack, regras
+  duplicadas renumeradas N1–N5, nome "Cronômetro"), backlog, READMEs (porta 27018, fluxo
+  de execução, auth), novo `backend/CONVENCOES.md`, `.http` com login por token.
+- **Tocado em arquivo de outro módulo (pontual):** `tests/relacionamento.test.js` — helper
+  `como()` passou a usar token e prefixo `/api/v1`, e os testes de 401 foram adaptados.
+
+### Verificação
+- `npm test` no backend: **72/72**. `npm run lint` e `npm run build`: ok.
+- Teste no navegador (Playwright) do fluxo completo: login errado, cadastro (senha curta,
+  duplicado), perfil, troca de senha, ranking vazio, sair e excluir conta — todos ok.
+- Testes rodaram em FerretDB (substituto do MongoDB neste ambiente); não houve execução em MongoDB real.
+
+### Limitações / avisos
+- Dados do json-server são por `usuarioId`: contas novas da API começam sem eles.
+- Ranking só terá linhas quando Confrontos migrar para a API.
+- Boost da tela usa `localStorage` (shim) até migrar.
+- Excluir conta apaga os confrontos e remove pontos do adversário.
+- `docs/` (gerência) não foi editado; o Termo de Abertura ainda diz que backend próprio é
+  "fora desta etapa" — decisão da gerência.

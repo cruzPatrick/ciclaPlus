@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/layout/Header.jsx";
 import Footer from "../components/layout/Footer.jsx";
 import { useCadastrar } from "../hooks/useCiclaData.js";
-import { usuariosApi } from "../api/ciclaApi.js";
 
 // Data de hoje em YYYY-MM-DD no fuso local (toISOString usa UTC e pode
 // adiantar um dia perto da meia-noite no Brasil).
@@ -26,7 +25,10 @@ const esquemaCadastro = z
       .refine((valor) => /^\d{4}-\d{2}-\d{2}$/.test(valor) && valor <= hoje(), {
         message: "A data de nascimento não pode estar no futuro",
       }),
-    senha: z.string().min(6, "A senha precisa ter pelo menos 6 caracteres"),
+    senha: z
+      .string()
+      .min(8, "A senha precisa ter pelo menos 8 caracteres")
+      .max(72, "A senha pode ter no máximo 72 caracteres"),
     confirmarSenha: z.string().min(1, "Confirme a senha"),
   })
   .refine((dados) => dados.senha === dados.confirmarSenha, {
@@ -57,15 +59,17 @@ export default function Cadastro() {
   } = useForm({ resolver: zodResolver(esquemaCadastro) });
 
   async function aoEnviar(dados) {
-    const jaExiste = await usuariosApi.emailJaExiste(dados.email);
-    if (jaExiste) {
-      setError("email", { message: "Já existe uma conta com esse e-mail" });
-      return;
-    }
-
     const { confirmarSenha: _confirmarSenha, ...dadosParaSalvar } = dados;
-    await cadastrarMutation.mutateAsync(dadosParaSalvar);
-    navigate("/login");
+    try {
+      await cadastrarMutation.mutateAsync(dadosParaSalvar);
+      navigate("/login");
+    } catch (erro) {
+      if (erro.status === 409) {
+        setError("email", { message: "Já existe uma conta com esse e-mail" });
+      } else {
+        setError("root", { message: erro.message });
+      }
+    }
   }
 
   return (
@@ -73,9 +77,9 @@ export default function Cadastro() {
       <Header titulo="Cadastrar novo ciclista" />
 
       <main className="container py-4" style={{ maxWidth: "480px" }}>
-        {cadastrarMutation.isError && (
-          <aside className="bg-light border border-danger text-danger rounded p-2 small mb-3 text-center">
-            Não foi possível cadastrar. O json-server está rodando? (npm run mock)
+        {errors.root && (
+          <aside role="alert" className="bg-light border border-danger text-danger rounded p-2 small mb-3 text-center">
+            {errors.root.message}
           </aside>
         )}
 

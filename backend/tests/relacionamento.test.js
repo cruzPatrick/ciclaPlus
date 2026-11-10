@@ -16,19 +16,21 @@ import Match from '../models/Match.js';
 import Mensagem from '../models/Mensagem.js';
 import Confronto from '../models/Confronto.js';
 import Boost from '../models/Boost.js';
+import { gerarToken } from '../utils/token.js';
 
 const URI = process.env.MONGODB_URI_TEST ?? 'mongodb://127.0.0.1:27018/ciclaplus_test';
+const API = '/api/v1';
 const MODELOS = [Usuario, Like, Match, Mensagem, Confronto, Boost];
 
-// Requisições feitas "como" um usuário (header x-usuario-id).
+// Requisições feitas "como" um usuário (token JWT no header Authorization).
 function como(usuario) {
-  const id = String(usuario._id);
-  const com = (req) => req.set('x-usuario-id', id);
+  const token = gerarToken(usuario);
+  const com = (req) => req.set('Authorization', `Bearer ${token}`);
   return {
-    get: (url) => com(request(app).get(url)),
-    post: (url, corpo = {}) => com(request(app).post(url)).send(corpo),
-    patch: (url, corpo = {}) => com(request(app).patch(url)).send(corpo),
-    delete: (url) => com(request(app).delete(url)),
+    get: (url) => com(request(app).get(API + url)),
+    post: (url, corpo = {}) => com(request(app).post(API + url)).send(corpo),
+    patch: (url, corpo = {}) => com(request(app).patch(API + url)).send(corpo),
+    delete: (url) => com(request(app).delete(API + url)),
   };
 }
 
@@ -60,9 +62,9 @@ beforeEach(async () => {
   assert.match(mongoose.connection.name, /test/);
   await Promise.all(MODELOS.map((modelo) => modelo.deleteMany({})));
   [ana, bruno, camila] = await Usuario.create([
-    { nome: 'Ana Beatriz', email: 'ana@teste.com', senha: '123456' },
-    { nome: 'Bruno Costa', email: 'bruno@teste.com', senha: '123456' },
-    { nome: 'Camila Rocha', email: 'camila@teste.com', senha: '123456' },
+    { nome: 'Ana Beatriz', email: 'ana@teste.com' },
+    { nome: 'Bruno Costa', email: 'bruno@teste.com' },
+    { nome: 'Camila Rocha', email: 'camila@teste.com' },
   ]);
 });
 
@@ -71,13 +73,18 @@ after(async () => {
 });
 
 describe('identificação do usuário', () => {
-  test('sem o header x-usuario-id a API responde 401', async () => {
-    const resposta = await request(app).get('/matches');
+  test('sem token a API responde 401', async () => {
+    const resposta = await request(app).get(`${API}/matches`);
     assert.equal(resposta.status, 401);
   });
 
-  test('id que não é um ObjectId responde 401', async () => {
-    const resposta = await request(app).get('/matches').set('x-usuario-id', '123');
+  test('o antigo header x-usuario-id não identifica mais ninguém', async () => {
+    const resposta = await request(app).get(`${API}/matches`).set('x-usuario-id', idDe(ana));
+    assert.equal(resposta.status, 401);
+  });
+
+  test('token inválido responde 401', async () => {
+    const resposta = await request(app).get(`${API}/matches`).set('Authorization', 'Bearer abc.def.ghi');
     assert.equal(resposta.status, 401);
   });
 });

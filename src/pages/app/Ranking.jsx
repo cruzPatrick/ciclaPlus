@@ -3,7 +3,7 @@ import { PONTOS_POR_RESULTADO } from "../../api/ciclaApi.js";
 import { paraSegundos } from "../../utils/tempo.js";
 
 export default function Ranking() {
-  const { data: ciclistas = [], isLoading: carregandoRanking, isError: erroRanking } =
+  const { data: ciclistas = [], isLoading: carregandoRanking, error: erroRanking } =
     useRankingGeral();
   const {
     data: melhoresTemposPorPercurso = [],
@@ -11,9 +11,9 @@ export default function Ranking() {
     isError: erroTempos,
   } = useMelhoresTempos();
 
-  // Quem tem mais pontos aparece primeiro; dentro de um percurso, o menor
+  // O ranking geral já vem ordenado da API; dentro de um percurso, o menor
   // tempo vem antes.
-  const ranking = [...ciclistas].sort((a, b) => b.pontuacao - a.pontuacao);
+  const ranking = ciclistas; // já vem ordenado e com posição da API
   const temposOrdenados = [...melhoresTemposPorPercurso].sort(
     (a, b) =>
       a.percurso.localeCompare(b.percurso) || paraSegundos(a.tempo) - paraSegundos(b.tempo)
@@ -25,33 +25,37 @@ export default function Ranking() {
 
       <h2 className="h5 mt-4">Ranking geral</h2>
       <p className="small text-body-secondary">
-        Classificação demonstrativa. A pontuação muda quando um resultado de confronto é
-        confirmado pelas duas partes: vitória soma {PONTOS_POR_RESULTADO["Vitória"]} pontos e
-        derrota soma {PONTOS_POR_RESULTADO["Derrota"]}.
+        A pontuação vem dos confrontos encerrados: vitória soma{" "}
+        {PONTOS_POR_RESULTADO["Vitória"]} pontos e derrota soma {PONTOS_POR_RESULTADO["Derrota"]}.
       </p>
       {carregandoRanking && <p className="text-body-secondary">Carregando ranking...</p>}
       {erroRanking && (
         <aside className="bg-light border border-danger text-danger rounded p-2 small">
-          Não foi possível carregar o ranking. O json-server está rodando? (npm run mock)
+          {erroRanking.message}
         </aside>
       )}
-      {!carregandoRanking && !erroRanking && (
+      {!carregandoRanking && !erroRanking && ranking.length === 0 && (
+        <p className="text-body-secondary">Ainda não há confrontos encerrados. Quando houver, a classificação aparece aqui.</p>
+      )}
+      {!carregandoRanking && !erroRanking && ranking.length > 0 && (
         <table className="table table-striped">
           <thead>
             <tr>
               <th>#</th>
               <th>Nome</th>
+              <th>Vitórias</th>
+              <th>Derrotas</th>
               <th>Pontuação</th>
-              <th>Melhor Tempo</th>
             </tr>
           </thead>
           <tbody>
-            {ranking.map((ciclista, indice) => (
-              <tr key={ciclista.id}>
-                <td>{indice + 1}</td>
+            {ranking.map((ciclista) => (
+              <tr key={ciclista.usuarioId} className={ciclista.souEu ? "table-primary fw-bold" : ""}>
+                <td>{ciclista.posicao}</td>
                 <td>{ciclista.nome}</td>
+                <td>{ciclista.vitorias}</td>
+                <td>{ciclista.derrotas}</td>
                 <td>{ciclista.pontuacao}</td>
-                <td>{ciclista.melhorTempo}</td>
               </tr>
             ))}
           </tbody>
