@@ -209,18 +209,19 @@ export default function MapaGps() {
     if (tempoMs === 0 || distanciaM === 0) return;
 
     adicionarTempoMutation.mutate({
-      nome: `Percurso GPS ${new Date().toLocaleDateString("pt-BR")}`,
+      trajeto: `Percurso GPS ${new Date().toLocaleDateString("pt-BR")}`,
       percursoId: null,
       origem: "gps",
-      tempo: formatarDuracao(Math.floor(tempoMs / 1000)),
-      distanciaKm: Number((distanciaM / 1000).toFixed(2)),
+      duracao: formatarDuracao(Math.floor(tempoMs / 1000)),
+      distancia: Number((distanciaM / 1000).toFixed(2)),
+    }, {
+      onSuccess: () => {
+        setTempoMs(0);
+        setDistanciaM(0);
+        trajetoRef.current = [];
+        if (linhaRef.current) linhaRef.current.setLatLngs([]);
+      },
     });
-
-    // Reseta só agora, depois de salvo, pra deixar pronto pro próximo percurso.
-    setTempoMs(0);
-    setDistanciaM(0);
-    trajetoRef.current = [];
-    if (linhaRef.current) linhaRef.current.setLatLngs([]);
   }
 
   if (consentimento === "pendente" || consentimento === "negado") {
@@ -261,6 +262,7 @@ export default function MapaGps() {
               className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm"
               style={{ width: "44px", height: "44px" }}
               aria-label="Iniciar cronômetro"
+              disabled={adicionarTempoMutation.isPending}
               onClick={iniciarCronometro}
             >
               <span className="material-icons">play_arrow</span>
@@ -295,7 +297,7 @@ export default function MapaGps() {
               style={{ width: "44px", height: "44px" }}
               aria-label="Finalizar e salvar tempo"
               title="Finalizar e salvar tempo"
-              disabled={distanciaM === 0}
+              disabled={distanciaM === 0 || adicionarTempoMutation.isPending}
               onClick={finalizarCronometro}
             >
               <span className="material-icons">check</span>
@@ -319,6 +321,12 @@ export default function MapaGps() {
         {erro && (
           <aside className="bg-light border border-warning text-warning-emphasis rounded p-2 small text-center mb-3">
             {erro}
+          </aside>
+        )}
+
+        {adicionarTempoMutation.isError && (
+          <aside className="bg-light border border-danger text-danger rounded p-2 small text-center mb-3">
+            Não foi possível salvar o tempo: {adicionarTempoMutation.error.message}
           </aside>
         )}
 

@@ -1,5 +1,77 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./client.js";
-import { normalizarTempo, paraSegundos } from "../utils/tempo.js";
+import { normalizarTempo } from "../utils/tempo.js";
+import { usuarioLogadoId } from "./sessao.js";
+
+const API_BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL ?? "http://localhost:3000";
+
+async function backendRequest(caminho, { method = "GET", body } = {}) {
+  const usuarioId = usuarioLogadoId();
+  if (!usuarioId) throw new Error("Usuário não identificado para acessar a API.");
+
+  const headers = { "x-usuario-id": usuarioId };
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+
+  const resposta = await fetch(`${API_BACKEND_URL}${caminho}`, {
+    method,
+    headers,
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+
+  if (!resposta.ok) {
+    const corpo = await resposta.text().catch(() => "");
+    throw new Error(
+      `Erro ${resposta.status} ao falar com a API (${resposta.url}). ${corpo}`.trim()
+    );
+  }
+  if (resposta.status === 204) return null;
+  return resposta.json();
+}
+
+const backendGet = (caminho) => backendRequest(caminho);
+const backendPost = (caminho, body) => backendRequest(caminho, { method: "POST", body });
+const backendPatch = (caminho, body) => backendRequest(caminho, { method: "PATCH", body });
+const backendDelete = (caminho) => backendRequest(caminho, { method: "DELETE" });
+
+function treinoParaBackend(treino) {
+  const dados = { ...treino };
+  const pessoaOuEquipe =
+    dados.parceiroOuEquipe ?? (dados.tipo === "equipe" ? dados.equipe : dados.parceiro);
+  delete dados.parceiro;
+  delete dados.equipe;
+  delete dados.usuarioId;
+  if (pessoaOuEquipe !== undefined) dados.parceiroOuEquipe = pessoaOuEquipe;
+  return dados;
+}
+
+function treinoDoBackend(treino) {
+  const { parceiroOuEquipe, ...dados } = treino;
+  return {
+    ...dados,
+    parceiro: treino.tipo === "individual" ? parceiroOuEquipe : null,
+    equipe: treino.tipo === "equipe" ? parceiroOuEquipe : null,
+  };
+}
+
+function tempoParaBackend(tempo) {
+  const dados = { ...tempo };
+  if (dados.nome !== undefined) dados.trajeto = dados.nome;
+  if (dados.tempo !== undefined) dados.duracao = normalizarTempo(dados.tempo);
+  if (dados.distanciaKm !== undefined) dados.distancia = dados.distanciaKm;
+  delete dados.nome;
+  delete dados.tempo;
+  delete dados.distanciaKm;
+  delete dados.usuarioId;
+  return dados;
+}
+
+function tempoDoBackend(tempo) {
+  return {
+    ...tempo,
+    nome: tempo.trajeto,
+    tempo: normalizarTempo(tempo.duracao),
+    distanciaKm: tempo.distancia,
+  };
+}
 
 // --- Usuários (login / cadastro / perfil / boost) ----------------------
 export const usuariosApi = {
@@ -72,13 +144,19 @@ export const mensagensApi = {
 
 // --- Treinos ---------------------------------------------------------------
 export const treinosApi = {
-  listarPorUsuario: (usuarioId) => porConta("/treinos", usuarioId),
+  async listarPorUsuario() {
+    return (await backendGet("/treinos")).map(treinoDoBackend);
+  },
   // Equipes são diretório compartilhado (igual ao Ranking), não dado
   // pessoal — continua global.
   equipes: () => apiGet("/equipes"),
-  marcar: (treino) => apiPost("/treinos", treino),
-  atualizar: (id, dados) => apiPatch(`/treinos/${id}`, dados),
-  remover: (id) => apiDelete(`/treinos/${id}`),
+  async marcar(treino) {
+    return treinoDoBackend(await backendPost("/treinos", treinoParaBackend(treino)));
+  },
+  async atualizar(id, dados) {
+    return treinoDoBackend(await backendPatch(`/treinos/${id}`, treinoParaBackend(dados)));
+  },
+  remover: (id) => backendDelete(`/treinos/${id}`),
 };
 
 // --- Passeios (Manter Passeio: CRUD completo) -------------------------------
@@ -96,10 +174,16 @@ export const percursosApi = {
 
 // --- Tempos (Cronômetro simulado ou GPS) -----------------------------------
 export const temposApi = {
-  listarPorUsuario: (usuarioId) => porConta("/tempos", usuarioId),
-  adicionar: (tempo) => apiPost("/tempos", tempo),
-  atualizar: (id, dados) => apiPatch(`/tempos/${id}`, dados),
-  remover: (id) => apiDelete(`/tempos/${id}`),
+  async listarPorUsuario() {
+    return (await backendGet("/tempos")).map(tempoDoBackend);
+  },
+  async adicionar(tempo) {
+    return tempoDoBackend(await backendPost("/tempos", tempoParaBackend(tempo)));
+  },
+  async atualizar(id, dados) {
+    return tempoDoBackend(await backendPatch(`/tempos/${id}`, tempoParaBackend(dados)));
+  },
+  remover: (id) => backendDelete(`/tempos/${id}`),
 };
 
 // --- Confrontos --------------------------------------------------------
@@ -132,7 +216,6 @@ export const PONTOS_POR_RESULTADO = { Vitória: 100, Derrota: 25 };
 
 export const rankingApi = {
   geral: () => apiGet("/ranking"),
-  melhoresTemposPorPercurso: () => apiGet("/melhoresTemposPorPercurso"),
 
   // Soma os pontos do resultado confirmado à linha da pessoa logada (cria a
   // linha se ainda não existir) e atualiza o melhor tempo dela.
@@ -140,7 +223,7 @@ export const rankingApi = {
     const [ranking, usuario, tempos] = await Promise.all([
       apiGet("/ranking"),
       usuariosApi.buscarPorId(usuarioId),
-      porConta("/tempos", usuarioId),
+      temposApi.listarPorUsuario(),
     ]);
     const pontos = PONTOS_POR_RESULTADO[resultado] ?? 0;
     const melhorTempo =
@@ -162,19 +245,13 @@ export const rankingApi = {
     });
   },
 
-  // Mantém "melhores tempos por percurso" coerente com os tempos reais
-  // registrados: só grava se for o primeiro tempo da pessoa naquele percurso
-  // ou se for melhor que o que já estava lá.
-  async registrarTempo({ percurso, ciclista, tempo, distanciaKm }) {
-    const tabela = await apiGet("/melhoresTemposPorPercurso");
-    const atual = tabela.find((r) => r.percurso === percurso && r.ciclista === ciclista);
-    const novo = normalizarTempo(tempo);
-    if (!atual) {
-      return apiPost("/melhoresTemposPorPercurso", { percurso, ciclista, tempo: novo, distanciaKm });
-    }
-    if (paraSegundos(novo) < paraSegundos(atual.tempo)) {
-      return apiPatch(`/melhoresTemposPorPercurso/${atual.id}`, { tempo: novo });
-    }
-    return atual;
+  async melhoresTemposPorPercurso() {
+    const tempos = await backendGet("/tempos/melhores-por-percurso");
+    return tempos.map((tempo) => ({
+      ...tempo,
+      percurso: tempo.trajeto,
+      tempo: normalizarTempo(tempo.duracao),
+      distanciaKm: tempo.distancia,
+    }));
   },
 };

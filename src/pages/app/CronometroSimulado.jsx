@@ -82,11 +82,11 @@ export default function CronometroSimulado() {
     }
 
     await adicionarMutation.mutateAsync({
-      nome: selecionado.nome,
+      trajeto: selecionado.nome,
       percursoId: selecionado.id,
       origem: "simulado",
-      tempo: formatarDuracao(dados.minutos * 60 + dados.segundos),
-      distanciaKm: selecionado.distanciaKm,
+      duracao: formatarDuracao(dados.minutos * 60 + dados.segundos),
+      distancia: selecionado.distanciaKm,
     });
     setMensagem({
       tipo: "ok",
@@ -221,7 +221,7 @@ export default function CronometroSimulado() {
 
       {adicionarMutation.isError && (
         <aside className="bg-light border border-danger text-danger rounded p-2 small mt-3">
-          Não foi possível registrar o tempo. O json-server está rodando? (npm run mock)
+          Não foi possível registrar o tempo: {adicionarMutation.error.message}
         </aside>
       )}
     </article>

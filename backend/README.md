@@ -42,6 +42,21 @@ frontend, quando for ligado à API, enviará o id guardado em `localStorage`
 | `POST /confrontos` `{adversarioId}` | Desafia (exige match, sem confronto aberto) |
 | `PATCH /confrontos/:id` `{status, resultado?}` | `confirmado`, `resultado_registrado`, `encerrado` |
 | `GET /boost` / `POST /boost` | Consulta / ativa (30 min) |
+| `GET /treinos` / `POST /treinos` | Lista / agenda meus treinos |
+| `PATCH /treinos/:id` / `DELETE /treinos/:id` | Atualiza / remove um treino meu |
+| `GET /tempos` / `POST /tempos` | Lista / registra meus tempos |
+| `PATCH /tempos/:id` / `DELETE /tempos/:id` | Atualiza / remove um tempo meu |
+| `GET /tempos/melhores-por-percurso` | Melhor duração por percurso, calculada a partir dos tempos registrados |
+
+Todas essas rotas exigem `x-usuario-id`. Treinos e tempos são restritos ao usuário
+identificado; o endpoint de melhores tempos agrega os registros de todas as contas.
+
+`POST /treinos` recebe `data` (`AAAA-MM-DD`), `hora` (`HH:MM`), `tipo`
+(`individual` ou `equipe`) e `parceiroOuEquipe`; `feito` é opcional e inicia
+como `false`. `POST /tempos` recebe `trajeto`, `duracao` (`HH:MM:SS`),
+`distancia` numérica e `origem` (`gps` ou `simulado`); `percursoId` pode ser
+`null` para registros sem percurso catalogado, como GPS. O `usuarioId` é sempre
+obtido do header, e ambas as coleções têm `createdAt` e `updatedAt`.
 
 ## Regras
 
@@ -69,8 +84,9 @@ backend/
   app.js                   -> monta o Express (cors, json, rotas); usado pelo servidor e pelos testes
   server.js                -> conecta no MongoDB e abre a porta (3000)
   middleware/usuarioAtual.js
-  models/                  -> Usuario, Like, Match, Mensagem, Confronto, Boost
-  routes/                  -> descoberta, matches, mensagens, confrontos, boost (+ index.js)
+  models/                  -> Usuario, Like, Match, Mensagem, Confronto, Boost, Treino, Tempo
+  controllers/             -> operações REST de treinos e tempos
+  routes/                  -> descoberta, matches, mensagens, confrontos, boost, treinos, tempos
   scripts/seed-usuarios.js -> cria 3 usuários fictícios
   tests/relacionamento.test.js
 ```

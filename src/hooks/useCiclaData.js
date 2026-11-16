@@ -160,7 +160,7 @@ export function useTreinos() {
   const usuarioId = usuarioLogadoId();
   return useQuery({
     queryKey: ["treinos", usuarioId],
-    queryFn: () => treinosApi.listarPorUsuario(usuarioId),
+    queryFn: () => treinosApi.listarPorUsuario(),
     enabled: usuarioId != null,
   });
 }
@@ -172,8 +172,7 @@ export function useEquipes() {
 export function useMarcarTreino() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (treino) =>
-      treinosApi.marcar({ ...treino, usuarioId: usuarioLogadoId() }),
+    mutationFn: (treino) => treinosApi.marcar(treino),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["treinos"] }),
   });
 }
@@ -235,30 +234,17 @@ export function useTempos() {
   const usuarioId = usuarioLogadoId();
   return useQuery({
     queryKey: ["tempos", usuarioId],
-    queryFn: () => temposApi.listarPorUsuario(usuarioId),
+    queryFn: () => temposApi.listarPorUsuario(),
     enabled: usuarioId != null,
   });
 }
 
-// Registrar um tempo de um percurso conhecido também atualiza a tabela de
-// "melhores tempos por percurso" do Ranking.
+// O ranking de percursos é calculado no backend a partir da coleção de tempos;
+// invalidar a consulta mantém a tela atualizada após qualquer alteração.
 export function useAdicionarTempo() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (tempo) => {
-      const usuarioId = usuarioLogadoId();
-      const salvo = await temposApi.adicionar({ ...tempo, usuarioId });
-      if (tempo.percursoId) {
-        const usuario = await usuariosApi.buscarPorId(usuarioId);
-        await rankingApi.registrarTempo({
-          percurso: tempo.nome,
-          ciclista: usuario.nome,
-          tempo: tempo.tempo,
-          distanciaKm: tempo.distanciaKm,
-        });
-      }
-      return salvo;
-    },
+    mutationFn: (tempo) => temposApi.adicionar(tempo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tempos"] });
       queryClient.invalidateQueries({ queryKey: ["melhoresTemposPorPercurso"] });
@@ -270,7 +256,10 @@ export function useAtualizarTempo() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, dados }) => temposApi.atualizar(id, dados),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tempos"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tempos"] });
+      queryClient.invalidateQueries({ queryKey: ["melhoresTemposPorPercurso"] });
+    },
   });
 }
 
@@ -278,7 +267,10 @@ export function useExcluirTempo() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id) => temposApi.remover(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tempos"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tempos"] });
+      queryClient.invalidateQueries({ queryKey: ["melhoresTemposPorPercurso"] });
+    },
   });
 }
 
@@ -380,8 +372,10 @@ export function useRankingGeral() {
 }
 
 export function useMelhoresTempos() {
+  const usuarioId = usuarioLogadoId();
   return useQuery({
-    queryKey: ["melhoresTemposPorPercurso"],
+    queryKey: ["melhoresTemposPorPercurso", usuarioId],
     queryFn: rankingApi.melhoresTemposPorPercurso,
+    enabled: usuarioId != null,
   });
 }
