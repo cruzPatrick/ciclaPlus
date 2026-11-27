@@ -1,4 +1,4 @@
-# SOUL.md — Cicla+ (identidade e regras do projeto)
+# soul.md — Cicla+ (identidade e regras do projeto)
 
 *Documento-âncora do projeto. Contexto de histórico: `changelog.md`.
 Pendências: `backlog.md`. Quem for continuar o desenvolvimento (humano ou
@@ -12,12 +12,13 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
 
 - **Perfis de usuário:** Ciclista e Equipe — o menu e algumas telas mudam
   conforme o perfil (ver "Estrutura de rotas").
-- **Estado atual:** front-end integrado a um **backend mockado
-  (json-server)**: tudo que as telas mostram vem de `db.json` e é gravado
-  de volta (match, chat, treino, passeio, tempo, confronto, consultoria,
-  boost, ranking). Cadastro cria usuário de verdade no mock.
-- **Conta de teste (dado inicial do `db.json`):** `teste@ciclaplus.com` /
-  `123456`. Login e cadastro validam contra o mock.
+- **Estado atual:** front-end com **dois backends**. **Usuários, login (JWT),
+  perfil e ranking** vêm da **API Express + MongoDB** (`backend/`); os demais
+  módulos (match, chat, treino, passeio, tempo, confronto, consultoria, boost)
+  ainda usam o **json-server** (`db.json`) até migrarem — ver `backlog.md`.
+- **Contas de teste:** cadastre pela tela `/cadastro` (senha mínima de 8
+  caracteres) ou rode `node scripts/seed-usuarios.js` em `backend/`. O usuário
+  `teste@ciclaplus.com` do `db.json` não existe mais para login.
 - **Só há uma conta logada por vez:** tudo que depende da *outra parte*
   (retribuir match, aceitar convite de confronto, confirmar resultado) é
   simulado por botões "Simular: ...".
@@ -33,7 +34,7 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
 | Mapa (GPS opcional) | Leaflet 1.9 + tiles OpenStreetMap, carregado só na aba GPS (`React.lazy`) |
 | Lint | oxlint (`npm run lint`) |
 | Deploy | GitHub Pages via Actions, **só manual** (`workflow_dispatch`) |
-| Backend (M2) | Express 5 + Mongoose + MongoDB (Docker, porta 27018 local), porta 3000 — pasta `backend/`, **em paralelo** ao json-server (ainda não ligada ao app) |
+| Backend (M2) | Express 5 + Mongoose + MongoDB (porta 27018 local), API em `http://localhost:3000/api/v1` — pasta `backend/` (JWT, bcrypt, zod, helmet, rate limit; convenções em `backend/CONVENCOES.md`). Ligada ao app para usuário/login/perfil/ranking |
 | Testes do backend | `node --test` + `supertest`, banco separado `ciclaplus_test` (`npm test` em `backend/`) |
 
 ## Regras invioláveis
@@ -47,12 +48,12 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
    parte obrigatória do fluxo (ver `npm run dev` + `npm run mock` no
    README). Dados sensíveis de sessão (`usuarioId` logado) continuam só
    em `localStorage`, nunca em texto hard-coded.
-   **Extensão M2 (2026-10-27):** existe uma API Express + MongoDB em `backend/`,
-   com dados fictícios e uso local. Enquanto o login e os usuários não migrarem
-   para ela, o app continua consumindo só o json-server. Quando for ligada, a regra
-   de ouro permanece: nenhum componente faz `fetch` direto; tudo passa por
+   **Extensão M2:** `backend/` é a API Express + MongoDB (local, dados fictícios).
+   Usuário, login, perfil e ranking já passam por ela (`src/api/apiClient.js`,
+   token JWT em `localStorage`); o resto segue no json-server até migrar. Em
+   ambos os casos nenhum componente faz `fetch` direto: tudo passa por
    `src/api/*` e pelos hooks do Tanstack Query.
-   
+
 2. **Cores só via variáveis do Bootstrap** (paleta em `custom.scss`): não
    escrever cor hard-coded em CSS/JS — `$primary`/`$secondary`/`.bg-ciclagrey`
    já nascem certos. CSS custom só onde o Bootstrap não cobre.
@@ -78,27 +79,33 @@ cronometram percursos com mapa, disputam confrontos e acompanham rankings.
     `d-lg-none`/`d-none d-lg-block`). Nenhum `alert()`/`.alert` — avisos
     são `<aside>`.
 11. **Data e hora no passado nunca:** todo formulário com data ou hora usa
-`src/utils/dataHora.js` — `min` no `<input>` e as regras `.refine()` no schema
-zod. Enquanto o recurso estiver no json-server, a validação existe só no
-frontend; ao migrar para o Express, repetir a regra no servidor.
+    `src/utils/dataHora.js` — `min` no `<input>` e `.refine()` no schema zod.
+    Enquanto o recurso estiver no json-server, a validação existe só no
+    frontend; ao migrar para o Express, repetir a regra no servidor.
+12. **Segurança da API:** identidade só vem do token JWT (nunca de body/header
+    de id); entrada validada com zod `.strict()`; senha só como hash bcrypt;
+    segredos só em `.env` (fora do Git). Detalhes em `backend/CONVENCOES.md`.
 
 ## Regras de negócio (entre telas)
 
-11. **Match recíproco:** dar match grava `mutuo: false`; só vira `true`
+*(numeração própria N1–N5, para não colidir com as regras invioláveis)*
+
+N1. **Match recíproco:** dar match grava `mutuo: false`; só vira `true`
     quando a outra pessoa retribui (botão "Simular" em Dar Match →
     "Aguardando retribuição"). **Chat**, **treino individual** e
     **confronto** só aceitam match recíproco (`utils/match.js`).
-12. **Confronto bilateral:** `pendente_aceite_adversario` → `confirmado` →
+N2. **Confronto bilateral:** `pendente_aceite_adversario` → `confirmado` →
     `resultado_registrado` → `resultado_confirmado` → `encerrado`. Os passos
     da outra parte são simulados. Só o `resultado_confirmado` pontua no
-    Ranking: vitória 100, derrota 25 (`PONTOS_POR_RESULTADO`).
-13. **Tempo só existe com percurso verificado:** o Cronômetro simulado
+    Ranking: vitória 100, derrota 25. Na API, `encerrado` ≡
+    `resultado_confirmado`; o ranking é derivado dos confrontos encerrados.
+N3. **Tempo só existe com percurso verificado:** o Cronômetro simulado
     compara o percurso selecionado com o "percorrido" e recusa se forem
     diferentes; o modo GPS (opcional) só salva com distância rastreada. Tempo
     com percurso conhecido atualiza "melhores tempos por percurso".
-14. **Boost** (`boostAte` no usuário) é demonstrativo, sem cobrança: quem tem
+N4. **Boost** (`boostAte` no usuário) é demonstrativo, sem cobrança: quem tem
     `boost` aparece na frente da fila do Dar Match.
-15. **Sem estilo inline** (`style={{}}`) em telas novas ou alteradas: usar
+N5. **Sem estilo inline** (`style={{}}`) em telas novas ou alteradas: usar
     utilitários do Bootstrap ou uma classe em `custom.scss`.
 
 ## Paleta
@@ -117,9 +124,8 @@ das cores originais.
 
 ```
 /              Landing (pública)
-/login         Login (valida contra o db.json)
-/cadastro      Cadastro (cria usuário no db.json; recusa e-mail repetido e
-               data de nascimento futura)
+/login         Login (API, JWT)
+/cadastro      Cadastro (API; recusa e-mail repetido, senha < 8 e data futura)
 /app/*         Área interna (AppLayout: hambúrguer desktop + abas mobile)
   descoberta | chat | passeios | treino | mapa | tempos | confronto |
   consultoria | ranking | boost | perfil
@@ -145,11 +151,10 @@ Rotas antigas mantidas como redirect: `treino-individual`, `treino-equipe`
 - Textos em **português do Brasil**, com `pt-BR` no `html lang`.
 - Mensagens de erro **explicam o próximo passo**, não só o problema.
 - Microcopy de privacidade **clara e honesta** (dado não sai do navegador).
-- Nomes de menu curtos (`Dar Match`, `Mapa`, `Ranking`).
+- Nomes de menu curtos (`Dar Match`, `Cronômetro`, `Ranking`).
 - IA assistindo: este documento é a fonte de verdade; mudanças de regra só
   por alteração explícita nele.
 
 ---
 
-*(Última atualização: 2026-10-26 — alinhado ao backend mockado e às regras
-de reciprocidade, Boost, Passeios e Cronômetro simulado.)*
+*(Última atualização: 2026-11-08 — usuário/login/perfil/ranking na API.)*

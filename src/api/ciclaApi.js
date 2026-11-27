@@ -1,36 +1,7 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./client.js";
-import { normalizarTempo } from "../utils/tempo.js";
+import { api } from "./apiClient.js";
 import { usuarioLogadoId } from "./sessao.js";
-
-const API_BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL ?? "http://localhost:3000";
-
-async function backendRequest(caminho, { method = "GET", body } = {}) {
-  const usuarioId = usuarioLogadoId();
-  if (!usuarioId) throw new Error("Usuário não identificado para acessar a API.");
-
-  const headers = { "x-usuario-id": usuarioId };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-
-  const resposta = await fetch(`${API_BACKEND_URL}${caminho}`, {
-    method,
-    headers,
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
-
-  if (!resposta.ok) {
-    const corpo = await resposta.text().catch(() => "");
-    throw new Error(
-      `Erro ${resposta.status} ao falar com a API (${resposta.url}). ${corpo}`.trim()
-    );
-  }
-  if (resposta.status === 204) return null;
-  return resposta.json();
-}
-
-const backendGet = (caminho) => backendRequest(caminho);
-const backendPost = (caminho, body) => backendRequest(caminho, { method: "POST", body });
-const backendPatch = (caminho, body) => backendRequest(caminho, { method: "PATCH", body });
-const backendDelete = (caminho) => backendRequest(caminho, { method: "DELETE" });
+import { normalizarTempo } from "../utils/tempo.js";
 
 function treinoParaBackend(treino) {
   const dados = { ...treino };
@@ -73,29 +44,47 @@ function tempoDoBackend(tempo) {
   };
 }
 
-// --- Usuários (login / cadastro / perfil / boost) ----------------------
+// --- Usuários (login / cadastro / perfil) -------------------------------
+// Agora vêm da API Express (backend/), com JWT. Ver src/api/apiClient.js.
+//
+// ATENÇÃO (Boost): a API ainda não tem "boostAte" no perfil (o Boost do
+// backend é outro modelo: POST /boost). Enquanto a tela de Boost não migrar,
+// o estado dela fica no navegador (localStorage, por usuário), só para a
+// demonstração continuar funcionando. Quem migrar Boost para a API remove isto.
+const chaveBoost = (id) => `ciclaplus.boostAte.${id}`;
+function lerBoost(id) {
+  try {
+    return localStorage.getItem(chaveBoost(id)) || null;
+  } catch {
+    return null;
+  }
+}
+function gravarBoost(id, valor) {
+  try {
+    if (valor) localStorage.setItem(chaveBoost(id), valor);
+    else localStorage.removeItem(chaveBoost(id));
+  } catch {
+    /* sem localStorage: o boost só não persiste */
+  }
+}
+
 export const usuariosApi = {
-  // Filtra no JS, não via querystring: o motor de filtro por múltiplos
-  // parâmetros do json-server@1 (beta) se mostrou instável em teste local
-  // (`?email=...&senha=...` retornando vazio mesmo com o registro
-  // existindo). Com o volume de dados mockado isso não tem custo real.
-  async autenticar(email, senha) {
-    const usuarios = await apiGet("/usuarios");
-    return usuarios.find((u) => u.email === email && u.senha === senha) ?? null;
+  // Devolve { token, usuario }; credenciais erradas → ApiError 401.
+  autenticar: (email, senha) => api.post("/auth/login", { email, senha }),
+  cadastrar: (dados) => api.post("/auth/cadastro", dados),
+  async buscarPorId(id) {
+    const eu = String(id) === String(usuarioLogadoId());
+    const perfil = await api.get(eu ? "/perfil" : `/perfil/${id}`);
+    return eu ? { ...perfil, boostAte: lerBoost(id) } : perfil;
   },
-  async emailJaExiste(email) {
-    const usuarios = await apiGet("/usuarios");
-    return usuarios.some((u) => u.email === email);
+  async atualizar(id, dados) {
+    const { boostAte, ...restante } = dados;
+    if (boostAte !== undefined) gravarBoost(id, boostAte);
+    if (Object.keys(restante).length > 0) await api.patch("/perfil", restante);
+    return usuariosApi.buscarPorId(id);
   },
-  cadastrar(dados) {
-    return apiPost("/usuarios", { ...dados, perfil: "ciclista" });
-  },
-  buscarPorId(id) {
-    return apiGet(`/usuarios/${id}`);
-  },
-  atualizar(id, dados) {
-    return apiPatch(`/usuarios/${id}`, dados);
-  },
+  trocarSenha: (senhaAtual, novaSenha) => api.put("/perfil/senha", { senhaAtual, novaSenha }),
+  excluirConta: (senha) => api.delete("/perfil", { senha }),
 };
 
 // --- Filtro por conta (dados pessoais) ----------------------------------
@@ -145,18 +134,18 @@ export const mensagensApi = {
 // --- Treinos ---------------------------------------------------------------
 export const treinosApi = {
   async listarPorUsuario() {
-    return (await backendGet("/treinos")).map(treinoDoBackend);
+    return (await api.get("/treinos")).map(treinoDoBackend);
   },
   // Equipes são diretório compartilhado (igual ao Ranking), não dado
   // pessoal — continua global.
   equipes: () => apiGet("/equipes"),
   async marcar(treino) {
-    return treinoDoBackend(await backendPost("/treinos", treinoParaBackend(treino)));
+    return treinoDoBackend(await api.post("/treinos", treinoParaBackend(treino)));
   },
   async atualizar(id, dados) {
-    return treinoDoBackend(await backendPatch(`/treinos/${id}`, treinoParaBackend(dados)));
+    return treinoDoBackend(await api.patch(`/treinos/${id}`, treinoParaBackend(dados)));
   },
-  remover: (id) => backendDelete(`/treinos/${id}`),
+  remover: (id) => api.delete(`/treinos/${id}`),
 };
 
 // --- Passeios (Manter Passeio: CRUD completo) -------------------------------
@@ -175,15 +164,15 @@ export const percursosApi = {
 // --- Tempos (Cronômetro simulado ou GPS) -----------------------------------
 export const temposApi = {
   async listarPorUsuario() {
-    return (await backendGet("/tempos")).map(tempoDoBackend);
+    return (await api.get("/tempos")).map(tempoDoBackend);
   },
   async adicionar(tempo) {
-    return tempoDoBackend(await backendPost("/tempos", tempoParaBackend(tempo)));
+    return tempoDoBackend(await api.post("/tempos", tempoParaBackend(tempo)));
   },
   async atualizar(id, dados) {
-    return tempoDoBackend(await backendPatch(`/tempos/${id}`, tempoParaBackend(dados)));
+    return tempoDoBackend(await api.patch(`/tempos/${id}`, tempoParaBackend(dados)));
   },
-  remover: (id) => backendDelete(`/tempos/${id}`),
+  remover: (id) => api.delete(`/tempos/${id}`),
 };
 
 // --- Confrontos --------------------------------------------------------
@@ -215,7 +204,11 @@ export const consultoriasApi = {
 export const PONTOS_POR_RESULTADO = { Vitória: 100, Derrota: 25 };
 
 export const rankingApi = {
-  geral: () => apiGet("/ranking"),
+  // Ranking geral vem da API: derivado dos confrontos ENCERRADOS (100/25).
+  async geral() {
+    const { itens } = await api.get("/ranking?limite=100");
+    return itens;
+  },
 
   // Soma os pontos do resultado confirmado à linha da pessoa logada (cria a
   // linha se ainda não existir) e atualiza o melhor tempo dela.
@@ -246,7 +239,7 @@ export const rankingApi = {
   },
 
   async melhoresTemposPorPercurso() {
-    const tempos = await backendGet("/tempos/melhores-por-percurso");
+    const tempos = await api.get("/tempos/melhores-por-percurso");
     return tempos.map((tempo) => ({
       ...tempo,
       percurso: tempo.trajeto,

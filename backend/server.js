@@ -1,9 +1,7 @@
-import mongoose from 'mongoose';
 import app from './app.js';
+import env from './config/env.js';
+import { conectar } from './config/db.js';
 
-const uri = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27018/ciclaplus';
-const porta = process.env.PORT ?? 3000;
-
-await mongoose.connect(uri);
+await conectar();
 console.log('MongoDB conectado');
-app.listen(porta, () => console.log(`API do CiclaPlus em http://localhost:${porta}`));
+app.listen(env.PORT, () => console.log(`API do CiclaPlus em http://localhost:${env.PORT}/api/v1`));

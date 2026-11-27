@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { useLogin } from "../hooks/useCiclaData.js";
-import { salvarUsuarioLogado } from "../api/sessao.js";
+import { salvarSessao } from "../api/sessao.js";
 
 const esquemaLogin = z.object({
   email: z.string().min(1, "Informe o e-mail").email("E-mail inválido"),
@@ -27,13 +27,16 @@ export default function Login() {
     "da comunidade.";
 
   async function aoEnviar(dados) {
-    const usuario = await loginMutation.mutateAsync(dados);
-    if (!usuario) {
-      setError("root", { message: "E-mail ou senha incorretos." });
-      return;
+    try {
+      const sessao = await loginMutation.mutateAsync(dados);
+      salvarSessao(sessao);
+      navigate("/app/descoberta");
+    } catch (erro) {
+      // 401 = e-mail/senha errados; 429 = limite de tentativas; 0 = API fora do ar.
+      const mensagem =
+        erro.status === 401 ? "E-mail ou senha incorretos." : erro.message;
+      setError("root", { message: mensagem });
     }
-    salvarUsuarioLogado(usuario.id);
-    navigate("/app/descoberta");
   }
 
   return (
@@ -47,16 +50,11 @@ export default function Login() {
             <p className="small text-body-secondary text-center mb-3">
               {textoApresentacao}
             </p>
-            <p className="small text-center text-body-secondary mb-2">
-              Teste com: <strong>teste@ciclaplus.com</strong> / senha{" "}
-              <strong>123456</strong>
-            </p>
           </header>
 
-          {(errors.root || loginMutation.isError) && (
-            <aside className="bg-light border border-danger text-danger rounded p-2 small mb-3 text-center">
-              {errors.root?.message ??
-                "Não foi possível falar com o servidor. O json-server está rodando? (npm run mock)"}
+          {errors.root && (
+            <aside role="alert" className="bg-light border border-danger text-danger rounded p-2 small mb-3 text-center">
+              {errors.root.message}
             </aside>
           )}
 

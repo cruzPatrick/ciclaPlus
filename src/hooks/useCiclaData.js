@@ -36,13 +36,23 @@ export function usePerfilUsuario(usuarioId) {
   });
 }
 
-// Também é o caminho do Boost: ativar/desativar é só um PATCH em `boostAte`.
+// Também é o caminho do Boost (ver aviso em ciclaApi.js sobre `boostAte`).
 export function useAtualizarPerfil(usuarioId) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (dados) => usuariosApi.atualizar(usuarioId, dados),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["usuario", usuarioId] }),
   });
+}
+
+export function useTrocarSenha() {
+  return useMutation({
+    mutationFn: ({ senhaAtual, novaSenha }) => usuariosApi.trocarSenha(senhaAtual, novaSenha),
+  });
+}
+
+export function useExcluirConta() {
+  return useMutation({ mutationFn: (senha) => usuariosApi.excluirConta(senha) });
 }
 
 // ===== Descoberta (Dar Match) + Matches ===================================
