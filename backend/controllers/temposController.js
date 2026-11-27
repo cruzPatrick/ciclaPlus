@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { garantirPercursos } from '../models/Percurso.js';
 import Tempo from '../models/Tempo.js';
 
 const CAMPOS = ['trajeto', 'percursoId', 'duracao', 'distancia', 'origem'];
@@ -51,6 +52,48 @@ function paraSegundos(duracao) {
   return horas * 3600 + minutos * 60 + segundos;
 }
 
+function normalizarNome(nome) {
+  return nome.trim().toLocaleLowerCase('pt-BR');
+}
+
+async function validarPercurso(dados) {
+  const percursos = await garantirPercursos();
+  const percursoId = dados.percursoId;
+  const trajeto = dados.trajeto?.trim();
+  let percurso = null;
+
+  if (percursoId !== undefined && percursoId !== null) {
+    percurso = percursos.find((item) => item.id === String(percursoId));
+    if (!percurso) {
+      return { erro: 'percursoId não corresponde a um percurso cadastrado.' };
+    }
+  }
+
+  if (trajeto) {
+    const percursoDoNome = percursos.find(
+      (item) => normalizarNome(item.nome) === normalizarNome(trajeto),
+    );
+    if (percurso && percursoDoNome?.id !== percurso.id) {
+      return { erro: 'trajeto não corresponde ao percursoId informado.' };
+    }
+    percurso ??= percursoDoNome;
+  }
+
+  if (!percurso && dados.origem !== 'gps') {
+    return { erro: 'trajeto informado não corresponde a um percurso cadastrado.' };
+  }
+
+  return {
+    dados: percurso
+      ? {
+          percursoId: percurso.id,
+          trajeto: percurso.nome,
+          distancia: percurso.distanciaKm,
+        }
+      : { percursoId: null },
+  };
+}
+
 export async function listar(req, res) {
   const tempos = await Tempo.find({ usuarioId: req.usuarioId }).sort({ createdAt: -1 });
   res.json(tempos);
@@ -60,6 +103,10 @@ export async function criar(req, res) {
   const dados = camposDoBody(req.body ?? {});
   const erro = validar(dados);
   if (erro) return res.status(400).json({ erro });
+
+  const resultado = await validarPercurso(dados);
+  if (resultado.erro) return res.status(400).json({ erro: resultado.erro });
+  Object.assign(dados, resultado.dados);
 
   const tempo = await Tempo.create({ ...dados, usuarioId: req.usuarioId });
   res.status(201).json(tempo);
@@ -75,12 +122,17 @@ export async function atualizar(req, res) {
   const erro = validar(dados, true);
   if (erro) return res.status(400).json({ erro });
 
-  const tempo = await Tempo.findOneAndUpdate(
-    { _id: req.params.id, usuarioId: req.usuarioId },
-    { $set: dados },
-    { new: true, runValidators: true },
-  );
+  const tempo = await Tempo.findOne({ _id: req.params.id, usuarioId: req.usuarioId });
   if (!tempo) return res.status(404).json({ erro: 'Tempo não encontrado.' });
+
+  if (dados.trajeto !== undefined || dados.percursoId !== undefined || dados.origem !== undefined) {
+    const resultado = await validarPercurso({ ...tempo.toObject(), ...dados });
+    if (resultado.erro) return res.status(400).json({ erro: resultado.erro });
+    Object.assign(dados, resultado.dados);
+  }
+
+  Object.assign(tempo, dados);
+  await tempo.save();
   res.json(tempo);
 }
 

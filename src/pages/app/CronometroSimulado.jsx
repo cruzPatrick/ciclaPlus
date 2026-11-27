@@ -30,7 +30,7 @@ const esquema = z
 // percurso compara o percurso SELECIONADO com o percurso "percorrido" da
 // simulação: se forem diferentes, o tempo é recusado.
 export default function CronometroSimulado() {
-  const { data: percursos = [], isLoading, isError } = usePercursos();
+  const { data: percursos = [], isLoading, isError, error } = usePercursos();
   const adicionarMutation = useAdicionarTempo();
   const [mensagem, setMensagem] = useState(null);
   const [rodando, setRodando] = useState(false);
@@ -99,7 +99,7 @@ export default function CronometroSimulado() {
   if (isError) {
     return (
       <aside className="bg-light border border-danger text-danger rounded p-2 small">
-        Não foi possível carregar os percursos. O json-server está rodando? (npm run mock)
+        Não foi possível carregar os percursos da API: {error.message}
       </aside>
     );
   }

@@ -50,6 +50,7 @@ Trocar a senha invalida os tokens antigos; excluir a conta também.
 | `GET /boost` / `POST /boost` | Consulta / ativa (30 min) |
 | `GET /treinos` / `POST /treinos` | Lista / agenda meus treinos |
 | `PATCH /treinos/:id` / `DELETE /treinos/:id` | Atualiza / remove um treino meu |
+| `GET /percursos` | Catálogo de percursos disponíveis |
 | `GET /tempos` / `POST /tempos` | Lista / registra meus tempos |
 | `PATCH /tempos/:id` / `DELETE /tempos/:id` | Atualiza / remove um tempo meu |
 | `GET /tempos/melhores-por-percurso` | Melhor duração por percurso, calculada a partir dos tempos registrados |
@@ -59,11 +60,13 @@ restritos ao usuário identificado pelo token; o endpoint de melhores tempos agr
 os registros de todas as contas.
 
 `POST /treinos` recebe `data` (`AAAA-MM-DD`), `hora` (`HH:MM`), `tipo`
-(`individual` ou `equipe`) e `parceiroOuEquipe`; `feito` é opcional e inicia
-como `false`. `POST /tempos` recebe `trajeto`, `duracao` (`HH:MM:SS`),
-`distancia` numérica e `origem` (`gps` ou `simulado`); `percursoId` pode ser
-`null` para registros sem percurso catalogado, como GPS. O `usuarioId` é sempre
-obtido do header, e ambas as coleções têm `createdAt` e `updatedAt`.
+(`individual` ou `equipe`) e `feito` opcional (padrão `false`). Treino individual
+recebe `parceiroId` e exige Match recíproco; treino em equipe recebe
+`parceiroOuEquipe`. `POST /tempos` recebe `trajeto`, `duracao` (`HH:MM:SS`),
+`distancia` numérica e `origem` (`gps` ou `simulado`). Percursos simulados devem
+existir no catálogo; registros GPS sem percurso catalogado podem usar
+`percursoId: null`. O `usuarioId` é sempre obtido do token, e ambas as coleções
+têm `createdAt` e `updatedAt`.
 
 ## Regras
 

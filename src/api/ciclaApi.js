@@ -107,6 +107,7 @@ export const candidatosApi = {
 // `mutuo: false` = você deu match e a outra pessoa ainda não retribuiu.
 export const matchesApi = {
   listarPorUsuario: (usuarioId) => porConta("/matches", usuarioId),
+  listarAceitos: () => api.get("/matches"),
   adicionar: (match) => apiPost("/matches", match),
   atualizar: (id, dados) => apiPatch(`/matches/${id}`, dados),
   remover: (id) => apiDelete(`/matches/${id}`),
@@ -158,7 +159,7 @@ export const passeiosApi = {
 
 // --- Percursos (diretório compartilhado, usado pra verificar o tempo) -------
 export const percursosApi = {
-  listar: () => apiGet("/percursos"),
+  listar: () => api.get("/percursos"),
 };
 
 // --- Tempos (Cronômetro simulado ou GPS) -----------------------------------

@@ -16,13 +16,14 @@ import Match from '../models/Match.js';
 import Mensagem from '../models/Mensagem.js';
 import Confronto from '../models/Confronto.js';
 import Boost from '../models/Boost.js';
+import Percurso from '../models/Percurso.js';
 import Treino from '../models/Treino.js';
 import Tempo from '../models/Tempo.js';
 import { gerarToken } from '../utils/token.js';
 
 const URI = process.env.MONGODB_URI_TEST ?? 'mongodb://127.0.0.1:27018/ciclaplus_test';
 const API = '/api/v1';
-const MODELOS = [Usuario, Like, Match, Mensagem, Confronto, Boost, Treino, Tempo];
+const MODELOS = [Usuario, Like, Match, Mensagem, Confronto, Boost, Percurso, Treino, Tempo];
 
 // Requisições feitas "como" um usuário (token JWT no header Authorization).
 function como(usuario) {
@@ -360,16 +361,30 @@ describe('Boost', () => {
 });
 
 describe('Treinos', () => {
+  test('recusa treino individual sem match recíproco', async () => {
+    const resposta = await como(ana).post('/treinos', {
+      data: '2026-12-01',
+      hora: '08:30',
+      tipo: 'individual',
+      parceiroId: idDe(bruno),
+    });
+    assert.equal(resposta.status, 403);
+    assert.match(resposta.body.erro, /match recíproco/);
+  });
+
   test('cria, lista e atualiza somente os treinos da conta', async () => {
+    await darMatch(ana, bruno);
     const criado = await como(ana).post('/treinos', {
       data: '2026-12-01',
       hora: '08:30',
       tipo: 'individual',
-      parceiroOuEquipe: 'Bruno Costa',
+      parceiroId: idDe(bruno),
     });
     assert.equal(criado.status, 201);
     assert.equal(criado.body.feito, false);
     assert.equal(criado.body.usuarioId, idDe(ana));
+    assert.equal(criado.body.parceiroId, idDe(bruno));
+    assert.equal(criado.body.parceiroOuEquipe, 'Bruno Costa');
 
     const outro = await como(bruno).post('/treinos', {
       data: '2026-12-02',
@@ -400,6 +415,54 @@ describe('Treinos', () => {
 });
 
 describe('Tempos', () => {
+  test('GET /percursos inicializa e lista o catálogo sem depender do mock', async () => {
+    const resposta = await como(ana).get('/percursos');
+    assert.equal(resposta.status, 200);
+    assert.ok(resposta.body.some((percurso) => percurso.id === 'orla'));
+    assert.ok(resposta.body.every((percurso) => percurso.nome && percurso.distanciaKm > 0));
+  });
+
+  test('recusa percurso inexistente ou trajeto fora do catálogo', async () => {
+    const idInvalido = await como(ana).post('/tempos', {
+      trajeto: 'Ciclovia da Orla',
+      percursoId: 'nao-existe',
+      duracao: '00:18:42',
+      distancia: 8.5,
+      origem: 'simulado',
+    });
+    assert.equal(idInvalido.status, 400);
+
+    const trajetoDivergente = await como(ana).post('/tempos', {
+      trajeto: 'Volta do Parque Central',
+      percursoId: 'orla',
+      duracao: '00:18:42',
+      distancia: 8.5,
+      origem: 'simulado',
+    });
+    assert.equal(trajetoDivergente.status, 400);
+
+    const trajetoInvalido = await como(ana).post('/tempos', {
+      trajeto: 'Percurso inventado',
+      duracao: '00:18:42',
+      distancia: 8.5,
+      origem: 'simulado',
+    });
+    assert.equal(trajetoInvalido.status, 400);
+  });
+
+  test('mantém tempos GPS que não pertencem ao catálogo', async () => {
+    const resposta = await como(ana).post('/tempos', {
+      trajeto: 'Rota registrada pelo GPS',
+      percursoId: null,
+      duracao: '00:18:42',
+      distancia: 8.5,
+      origem: 'gps',
+    });
+    assert.equal(resposta.status, 201);
+    assert.equal(resposta.body.percursoId, null);
+    assert.equal(resposta.body.trajeto, 'Rota registrada pelo GPS');
+  });
+
   test('CRUD mantém cada tempo associado à conta que o criou', async () => {
     const criado = await como(ana).post('/tempos', {
       trajeto: 'Ciclovia da Orla',

@@ -78,6 +78,15 @@ export function useMatches() {
   });
 }
 
+export function useMatchesAceitos() {
+  const usuarioId = usuarioLogadoId();
+  return useQuery({
+    queryKey: ["matchesAceitos", usuarioId],
+    queryFn: () => matchesApi.listarAceitos(),
+    enabled: usuarioId != null,
+  });
+}
+
 // Uma avaliação (match ou passar) sempre tira a pessoa do pool de
 // candidatos; se foi match, ela também entra na lista de matches — mas com
 // `mutuo: false`: só vira recíproco quando a outra pessoa retribui
@@ -237,7 +246,13 @@ export function useExcluirPasseio() {
 // ===== Percursos e Tempos ===================================================
 
 export function usePercursos() {
-  return useQuery({ queryKey: ["percursos"], queryFn: percursosApi.listar });
+  const usuarioId = usuarioLogadoId();
+  return useQuery({
+    queryKey: ["percursos", usuarioId],
+    queryFn: () => percursosApi.listar(),
+    staleTime: 5 * 60 * 1000,
+    enabled: usuarioId != null,
+  });
 }
 
 export function useTempos() {
