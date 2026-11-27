@@ -68,16 +68,19 @@ function EditarTempo({ item, onFechar }) {
           Cancelar
         </button>
       </nav>
+      {atualizarMutation.isError && (
+        <aside className="col-12 bg-light border border-danger text-danger rounded p-2 small">
+          Não foi possível atualizar o tempo: {atualizarMutation.error.message}
+        </aside>
+      )}
     </form>
   );
 }
 
 export default function Tempos() {
-  // Os tempos vêm do json-server. Um tempo novo só nasce no Cronômetro
-  // (simulado ou GPS), com percurso verificado — não existe um formulário
-  // aqui pra criar tempo do zero. Aqui dá pra listar, buscar, editar e
-  // excluir.
-  const { data: trajetos = [], isLoading, isError } = useTempos();
+  // Um tempo novo só nasce no Cronômetro (simulado ou GPS), com percurso
+  // verificado. Aqui dá pra listar, buscar, editar e excluir os registros da API.
+  const { data: trajetos = [], isLoading, isError, error } = useTempos();
   const excluirMutation = useExcluirTempo();
 
   const [pesquisa, setPesquisa] = useState("");
@@ -107,7 +110,7 @@ export default function Tempos() {
       <main className="container py-4">
         <h1 className="h3">Gerenciar Tempo</h1>
         <aside className="bg-light border border-danger text-danger rounded p-2 small">
-          Não foi possível carregar os tempos. O json-server está rodando? (npm run mock)
+          Não foi possível carregar os tempos: {error.message}
         </aside>
       </main>
     );
@@ -214,6 +217,12 @@ export default function Tempos() {
               </article>
             ))}
           </section>
+        )}
+
+        {excluirMutation.isError && (
+          <aside className="bg-light border border-danger text-danger rounded p-2 small mb-3">
+            Não foi possível excluir o tempo: {excluirMutation.error.message}
+          </aside>
         )}
 
         <footer className="d-flex justify-content-end d-lg-none mt-3">

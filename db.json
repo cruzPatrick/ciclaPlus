@@ -18,6 +18,15 @@
       "senha": "123456",
       "perfil": "ciclista",
       "id": "ye1i6QUqlGY"
+    },
+    {
+      "nome": "gabriel cabral",
+      "email": "gabriel.masterl.ol@gmail.com",
+      "telefone": "21979103125",
+      "dataNascimento": "2004-01-13",
+      "senha": "10203040",
+      "perfil": "ciclista",
+      "id": "FLi-e-7Mfsg"
     }
   ],
   "candidatos": [

@@ -1,4 +1,4 @@
-// Testes de Match, Chat, Confronto, Desfazer match e Boost.
+// Testes de Match, Chat, Confronto, Boost, Treino e Tempo.
 // Usam o MongoDB local, mas num banco SEPARADO (nome com "test"): nunca rode
 // contra o banco da aplicação, porque cada teste apaga as coleções.
 //
@@ -16,11 +16,13 @@ import Match from '../models/Match.js';
 import Mensagem from '../models/Mensagem.js';
 import Confronto from '../models/Confronto.js';
 import Boost from '../models/Boost.js';
+import Treino from '../models/Treino.js';
+import Tempo from '../models/Tempo.js';
 import { gerarToken } from '../utils/token.js';
 
 const URI = process.env.MONGODB_URI_TEST ?? 'mongodb://127.0.0.1:27018/ciclaplus_test';
 const API = '/api/v1';
-const MODELOS = [Usuario, Like, Match, Mensagem, Confronto, Boost];
+const MODELOS = [Usuario, Like, Match, Mensagem, Confronto, Boost, Treino, Tempo];
 
 // Requisições feitas "como" um usuário (token JWT no header Authorization).
 function como(usuario) {
@@ -354,5 +356,112 @@ describe('Boost', () => {
     assert.equal(fila[0].id, idDe(camila));
     assert.equal(fila[0].emBoost, true);
     assert.equal(fila[1].emBoost, false);
+  });
+});
+
+describe('Treinos', () => {
+  test('cria, lista e atualiza somente os treinos da conta', async () => {
+    const criado = await como(ana).post('/treinos', {
+      data: '2026-12-01',
+      hora: '08:30',
+      tipo: 'individual',
+      parceiroOuEquipe: 'Bruno Costa',
+    });
+    assert.equal(criado.status, 201);
+    assert.equal(criado.body.feito, false);
+    assert.equal(criado.body.usuarioId, idDe(ana));
+
+    const outro = await como(bruno).post('/treinos', {
+      data: '2026-12-02',
+      hora: '09:00',
+      tipo: 'equipe',
+      parceiroOuEquipe: 'Equipe Azul',
+    });
+    assert.equal(outro.status, 201);
+    assert.equal((await como(ana).get('/treinos')).body.length, 1);
+
+    const atualizado = await como(ana).patch(`/treinos/${criado.body.id}`, { feito: true });
+    assert.equal(atualizado.status, 200);
+    assert.equal(atualizado.body.feito, true);
+    assert.equal((await como(bruno).patch(`/treinos/${criado.body.id}`, { feito: false })).status, 404);
+    assert.equal((await como(ana).delete(`/treinos/${criado.body.id}`)).status, 204);
+    assert.equal((await como(ana).get('/treinos')).body.length, 0);
+  });
+
+  test('recusa treino com hora ou tipo inválido', async () => {
+    const resposta = await como(ana).post('/treinos', {
+      data: '2026-12-01',
+      hora: '25:30',
+      tipo: 'grupo',
+      parceiroOuEquipe: 'Equipe Azul',
+    });
+    assert.equal(resposta.status, 400);
+  });
+});
+
+describe('Tempos', () => {
+  test('CRUD mantém cada tempo associado à conta que o criou', async () => {
+    const criado = await como(ana).post('/tempos', {
+      trajeto: 'Ciclovia da Orla',
+      percursoId: 'orla',
+      duracao: '00:18:42',
+      distancia: 8.5,
+      origem: 'simulado',
+    });
+    assert.equal(criado.status, 201);
+    assert.equal(criado.body.usuarioId, idDe(ana));
+
+    const atualizado = await como(ana).patch(`/tempos/${criado.body.id}`, { duracao: '00:17:30' });
+    assert.equal(atualizado.status, 200);
+    assert.equal(atualizado.body.duracao, '00:17:30');
+    assert.equal((await como(bruno).get('/tempos')).body.length, 0);
+    assert.equal((await como(bruno).delete(`/tempos/${criado.body.id}`)).status, 404);
+  });
+
+  test('ranking retorna o menor tempo por percurso e ignora registros GPS sem percurso', async () => {
+    await Tempo.create([
+      {
+        trajeto: 'Ciclovia da Orla',
+        percursoId: 'orla',
+        duracao: '00:18:42',
+        distancia: 8.5,
+        origem: 'simulado',
+        usuarioId: ana._id,
+      },
+      {
+        trajeto: 'Ciclovia da Orla',
+        percursoId: 'orla',
+        duracao: '00:09:10',
+        distancia: 8.5,
+        origem: 'simulado',
+        usuarioId: bruno._id,
+      },
+      {
+        trajeto: 'Percurso GPS',
+        percursoId: null,
+        duracao: '00:05:00',
+        distancia: 2,
+        origem: 'gps',
+        usuarioId: ana._id,
+      },
+    ]);
+
+    const resposta = await como(ana).get('/tempos/melhores-por-percurso');
+    assert.equal(resposta.status, 200);
+    assert.equal(resposta.body.length, 1);
+    assert.equal(resposta.body[0].percursoId, 'orla');
+    assert.equal(resposta.body[0].duracao, '00:09:10');
+    assert.equal(resposta.body[0].ciclista, 'Bruno Costa');
+  });
+
+  test('recusa duração em formato inválido', async () => {
+    const resposta = await como(ana).post('/tempos', {
+      trajeto: 'Ciclovia da Orla',
+      percursoId: 'orla',
+      duracao: '18:42',
+      distancia: 8.5,
+      origem: 'simulado',
+    });
+    assert.equal(resposta.status, 400);
   });
 });

@@ -9,6 +9,8 @@ import matches from './matches.js';
 import mensagens from './mensagens.js';
 import confrontos from './confrontos.js';
 import boost from './boost.js';
+import treinos from './treinos.js';
+import tempos from './tempos.js';
 
 // app.use('/api/v1', rotas(limiteAuth))
 // usuarioAtual (JWT) é aplicado POR prefixo para não bloquear login/cadastro.
@@ -29,5 +31,7 @@ export default function rotas(limiteAuth) {
   router.use('/mensagens', usuarioAtual, mensagens);
   router.use('/confrontos', usuarioAtual, confrontos);
   router.use('/boost', usuarioAtual, boost);
+  router.use('/treinos', usuarioAtual, treinos);
+  router.use('/tempos', usuarioAtual, tempos);
   return router;
 }

@@ -9,6 +9,7 @@ export default function Ranking() {
     data: melhoresTemposPorPercurso = [],
     isLoading: carregandoTempos,
     isError: erroTempos,
+    error: erroTemposDetalhe,
   } = useMelhoresTempos();
 
   // O ranking geral já vem ordenado da API; dentro de um percurso, o menor
@@ -69,7 +70,7 @@ export default function Ranking() {
       {carregandoTempos && <p className="text-body-secondary">Carregando...</p>}
       {erroTempos && (
         <aside className="bg-light border border-danger text-danger rounded p-2 small">
-          Não foi possível carregar os tempos. O json-server está rodando? (npm run mock)
+          Não foi possível carregar os melhores tempos: {erroTemposDetalhe.message}
         </aside>
       )}
       {!carregandoTempos && !erroTempos && (

@@ -63,7 +63,13 @@ function FormularioIndividual({ parceiros, onAgendar }) {
   const minHora = dataEscolhida === minData ? horaAgora() : undefined;
 
   async function aoEnviar(dados) {
-    await onAgendar({ ...dados, tipo: "individual", equipe: null, feito: false });
+    await onAgendar({
+      data: dados.data,
+      hora: dados.hora,
+      tipo: "individual",
+      parceiroOuEquipe: dados.parceiro,
+      feito: false,
+    });
     reset();
   }
 
@@ -136,7 +142,13 @@ function FormularioEquipe({ equipes, onAgendar }) {
   const minHora = dataEscolhida === minData ? horaAgora() : undefined;
 
   async function aoEnviar(dados) {
-    await onAgendar({ ...dados, tipo: "equipe", parceiro: null, feito: false });
+    await onAgendar({
+      data: dados.data,
+      hora: dados.hora,
+      tipo: "equipe",
+      parceiroOuEquipe: dados.equipe,
+      feito: false,
+    });
     reset();
   }
 
@@ -196,7 +208,7 @@ export default function Treino() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tipo = soEquipe || searchParams.get("tipo") === "equipe" ? "equipe" : "individual";
 
-  const { data: treinosMarcados = [], isLoading, isError } = useTreinos();
+  const { data: treinosMarcados = [], isLoading, isError, error } = useTreinos();
   const { data: equipes = [] } = useEquipes();
   const { data: matches = [] } = useMatches();
   const marcarMutation = useMarcarTreino();
@@ -258,7 +270,13 @@ export default function Treino() {
           )}
           {marcarMutation.isError && (
             <aside className="bg-light border border-danger text-danger rounded p-2 small mt-2">
-              Não foi possível agendar. O json-server está rodando? (npm run mock)
+              Não foi possível agendar: {marcarMutation.error.message}
+            </aside>
+          )}
+          {(alternarFeitoMutation.isError || excluirMutation.isError) && (
+            <aside className="bg-light border border-danger text-danger rounded p-2 small mt-2">
+              Não foi possível atualizar o treino:{" "}
+              {(alternarFeitoMutation.error || excluirMutation.error).message}
             </aside>
           )}
         </section>
@@ -269,7 +287,7 @@ export default function Treino() {
           {isLoading && <p className="text-body-secondary">Carregando treinos marcados...</p>}
           {isError && (
             <aside className="bg-light border border-danger text-danger rounded p-2 small">
-              Não foi possível carregar os treinos. O json-server está rodando? (npm run mock)
+              Não foi possível carregar os treinos: {error.message}
             </aside>
           )}
 

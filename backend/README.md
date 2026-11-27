@@ -48,6 +48,22 @@ Trocar a senha invalida os tokens antigos; excluir a conta também.
 | `GET /mensagens?matchId=` / `POST /mensagens` | Conversa / envia (exige match) |
 | `GET /confrontos` / `POST /confrontos` / `PATCH /confrontos/:id` | Fluxo de confronto |
 | `GET /boost` / `POST /boost` | Consulta / ativa (30 min) |
+| `GET /treinos` / `POST /treinos` | Lista / agenda meus treinos |
+| `PATCH /treinos/:id` / `DELETE /treinos/:id` | Atualiza / remove um treino meu |
+| `GET /tempos` / `POST /tempos` | Lista / registra meus tempos |
+| `PATCH /tempos/:id` / `DELETE /tempos/:id` | Atualiza / remove um tempo meu |
+| `GET /tempos/melhores-por-percurso` | Melhor duração por percurso, calculada a partir dos tempos registrados |
+
+Todas essas rotas exigem `Authorization: Bearer <token>`. Treinos e tempos são
+restritos ao usuário identificado pelo token; o endpoint de melhores tempos agrega
+os registros de todas as contas.
+
+`POST /treinos` recebe `data` (`AAAA-MM-DD`), `hora` (`HH:MM`), `tipo`
+(`individual` ou `equipe`) e `parceiroOuEquipe`; `feito` é opcional e inicia
+como `false`. `POST /tempos` recebe `trajeto`, `duracao` (`HH:MM:SS`),
+`distancia` numérica e `origem` (`gps` ou `simulado`); `percursoId` pode ser
+`null` para registros sem percurso catalogado, como GPS. O `usuarioId` é sempre
+obtido do header, e ambas as coleções têm `createdAt` e `updatedAt`.
 
 ## Regras
 
@@ -78,10 +94,14 @@ Trocar a senha invalida os tokens antigos; excluir a conta também.
 
 ```
 backend/
-  app.js, server.js        -> Express (helmet, CORS, rate limit) e porta
+  app.js                   -> monta o Express (cors, json, rotas); usado pelo servidor e pelos testes
+  server.js                -> conecta no MongoDB e abre a porta
   config/                  -> env.js (zod), db.js, limpezaConta.js
   middleware/              -> usuarioAtual (JWT), validar (zod), errorHandler, notFound
-  models/ routes/ validators/ utils/
-  scripts/seed-usuarios.js
+  models/                  -> Usuario, Like, Match, Mensagem, Confronto, Boost, Treino, Tempo
+  controllers/             -> operações REST de treinos e tempos
+  routes/                  -> auth, perfil, ranking, descoberta, relacionamento, treinos, tempos
+  validators/ utils/
+  scripts/seed-usuarios.js -> cria 3 usuários fictícios
   tests/                   -> setup.js, helpers.js, *.test.js (npm test roda em série)
 ```
