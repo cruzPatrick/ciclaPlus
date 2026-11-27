@@ -5,14 +5,13 @@ import { z } from "zod";
 import {
   useTreinos,
   useEquipes,
-  useMatches,
+  useMatchesAceitos,
   useMarcarTreino,
   useAlternarTreinoFeito,
   useExcluirTreino,
   usePerfilUsuario,
 } from "../../hooks/useCiclaData.js";
 import { usuarioLogadoId } from "../../api/sessao.js";
-import { ehMutuo } from "../../utils/match.js";
 import {
   hoje,
   horaAgora,
@@ -67,7 +66,7 @@ function FormularioIndividual({ parceiros, onAgendar }) {
       data: dados.data,
       hora: dados.hora,
       tipo: "individual",
-      parceiroOuEquipe: dados.parceiro,
+      parceiroId: dados.parceiro,
       feito: false,
     });
     reset();
@@ -85,7 +84,7 @@ function FormularioIndividual({ parceiros, onAgendar }) {
         >
           <option value="" disabled>Escolha...</option>
           {parceiros.map((match) => (
-            <option key={match.id} value={match.nome}>{match.nome}</option>
+            <option key={match.parceiroId} value={match.parceiroId}>{match.nome}</option>
           ))}
         </select>
         {errors.parceiro && (
@@ -210,12 +209,14 @@ export default function Treino() {
 
   const { data: treinosMarcados = [], isLoading, isError, error } = useTreinos();
   const { data: equipes = [] } = useEquipes();
-  const { data: matches = [] } = useMatches();
+  const {
+    data: parceiros = [],
+    isError: erroAoCarregarParceiros,
+    error: erroParceiros,
+  } = useMatchesAceitos();
   const marcarMutation = useMarcarTreino();
   const alternarFeitoMutation = useAlternarTreinoFeito();
   const excluirMutation = useExcluirTreino();
-
-  const parceiros = matches.filter(ehMutuo);
 
   function escolherTipo(novoTipo) {
     // replace: trocar de aba não enche o histórico do navegador.
@@ -267,6 +268,11 @@ export default function Treino() {
               equipes={equipes}
               onAgendar={(dados) => marcarMutation.mutateAsync(dados)}
             />
+          )}
+          {tipo === "individual" && erroAoCarregarParceiros && (
+            <aside className="bg-light border border-danger text-danger rounded p-2 small mt-2">
+              Não foi possível carregar os parceiros aceitos: {erroParceiros.message}
+            </aside>
           )}
           {marcarMutation.isError && (
             <aside className="bg-light border border-danger text-danger rounded p-2 small mt-2">

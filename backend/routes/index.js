@@ -9,6 +9,7 @@ import matches from './matches.js';
 import mensagens from './mensagens.js';
 import confrontos from './confrontos.js';
 import boost from './boost.js';
+import percursos from './percursos.js';
 import treinos from './treinos.js';
 import tempos from './tempos.js';
 
@@ -31,6 +32,7 @@ export default function rotas(limiteAuth) {
   router.use('/mensagens', usuarioAtual, mensagens);
   router.use('/confrontos', usuarioAtual, confrontos);
   router.use('/boost', usuarioAtual, boost);
+  router.use('/percursos', usuarioAtual, percursos);
   router.use('/treinos', usuarioAtual, treinos);
   router.use('/tempos', usuarioAtual, tempos);
   return router;
